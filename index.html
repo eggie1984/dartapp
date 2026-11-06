@@ -1,0 +1,2620 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Wie gooit er mee?</title>
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#15493A"><meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0B4545"><link rel="icon" type="image/png" href="icon-192.png"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Wie gooit er mee?">
+</head><body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one narrow column like a pub scoreboard. A dark board-green header, then one card per match
+   with date block, opponent, and a seven-cell bar (one cell per player). A card turns red under 4 players. */
+:root {
+  --bg: #EBEFE8;
+  --page: #009999;
+  --month-ink: #0A2E2E;
+  --surface: #F9FBF7;
+  --surface-2: #DFE6DC;
+  --ink: #14211A;
+  --ink-2: #4A5A51;
+  --line: #C4CFC2;
+  --brand: #15493A;
+  --brand-ink: #F2F7F1;
+  --accent: #15493A;
+  --yes: #17683F;
+  --home: #16583C;
+  --yes-bg: #BDE3CB;
+  --bar-yes: var(--yes-bg); --bar-late: var(--late-bg); --bar-no: var(--no-bg);
+  --no: #A82E24;
+  --no-bg: #F0C4BE;
+  --late: #8A5A00;
+  --late-bg: #F0DDA0;
+  --on-status: #FFFFFF;
+  --board-red: #C8372D;
+  --board-green: #2F8F5B;
+  --board-cream: #EFE6CC;
+  --board-black: #101512;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --font-body: 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+/* teamkleur: elk team kiest een tint (--h). Zonder tint blijft het klassieke groen. */
+:root[data-hue] {
+  --brand: hsl(var(--h) 50% 22%); --accent: hsl(var(--h) 50% 22%); --home: hsl(var(--h) 50% 25%);
+  --page: hsl(var(--h) 50% 64%); --month-ink: hsl(var(--h) 60% 12%);
+  --bg: hsl(var(--h) 20% 93%); --surface: hsl(var(--h) 25% 98%); --surface-2: hsl(var(--h) 18% 88%); --line: hsl(var(--h) 14% 80%);
+  --ink: hsl(var(--h) 25% 10%); --ink-2: hsl(var(--h) 10% 33%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #050E0E; --bg: #0A1A1B; --surface: #12292A; --surface-2: #1D3D3E; --ink: #F2FAF8; --ink-2: #B3CCC8; --line: #3A6061; --month-ink: #B3CCC8;
+    --brand: #0B4545; --brand-ink: #F2FAF8; --accent: #7FD4AC;
+    --bar-yes: var(--yes); --bar-late: var(--late); --bar-no: var(--no); --home: #2E7552; --yes: #58C98B; --yes-bg: #173A29; --no: #F28B80; --no-bg: #432320; --late: #E6B94C; --late-bg: #3E3112;
+    --on-status: #0B1A12;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #050E0E; --bg: #0A1A1B; --surface: #12292A; --surface-2: #1D3D3E; --ink: #F2FAF8; --ink-2: #B3CCC8; --line: #3A6061; --month-ink: #B3CCC8;
+  --brand: #0B4545; --brand-ink: #F2FAF8; --accent: #7FD4AC;
+  --bar-yes: var(--yes); --bar-late: var(--late); --bar-no: var(--no); --home: #2E7552; --yes: #58C98B; --yes-bg: #173A29; --no: #F28B80; --no-bg: #432320; --late: #E6B94C; --late-bg: #3E3112;
+  --on-status: #0B1A12;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-hue]:not([data-theme="light"]) {
+    --page: hsl(var(--h) 45% 4%); --bg: hsl(var(--h) 40% 7%); --surface: hsl(var(--h) 35% 12%); --surface-2: hsl(var(--h) 32% 19%); --line: hsl(var(--h) 22% 30%);
+    --ink: hsl(var(--h) 30% 96%); --ink-2: hsl(var(--h) 20% 75%); --month-ink: hsl(var(--h) 20% 75%);
+    --brand: hsl(var(--h) 55% 20%); --brand-ink: hsl(var(--h) 30% 96%); --accent: hsl(var(--h) 60% 72%); --home: hsl(var(--h) 40% 32%);
+  }
+}
+:root[data-hue][data-theme="dark"] {
+  --page: hsl(var(--h) 45% 4%); --bg: hsl(var(--h) 40% 7%); --surface: hsl(var(--h) 35% 12%); --surface-2: hsl(var(--h) 32% 19%); --line: hsl(var(--h) 22% 30%);
+  --ink: hsl(var(--h) 30% 96%); --ink-2: hsl(var(--h) 20% 75%); --month-ink: hsl(var(--h) 20% 75%);
+  --brand: hsl(var(--h) 55% 20%); --brand-ink: hsl(var(--h) 30% 96%); --accent: hsl(var(--h) 60% 72%); --home: hsl(var(--h) 40% 32%);
+}
+
+* { box-sizing: border-box; }
+body { background: var(--page); color: var(--ink); font: 16px/1.45 var(--font-body); padding-bottom: 40px; }
+h1, h2, h3, p { margin: 0; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .55; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.in {
+  width: 100%; max-width: 640px; margin-inline: auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* header */
+.top { background: var(--brand); color: var(--brand-ink); padding-block: 18px 16px; }
+.top .in { display: flex; align-items: center; gap: 14px; }
+.board { flex: none; width: 54px; height: 54px; display: block; object-fit: contain; }
+.top h1 { font: 700 30px/1 var(--font-display); letter-spacing: .01em; text-wrap: balance; }
+.top .sub { font-size: 13px; opacity: .8; margin-top: 4px; }
+
+main { padding-top: 18px; display: flex; flex-direction: column; gap: 16px; }
+.note { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; font-size: 14px; color: var(--ink-2); }
+.note[hidden] { display: none; }
+
+/* who am I */
+.who { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.who h2 { font: 700 24px/1.1 var(--font-display); }
+.who p { color: var(--ink-2); font-size: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { min-height: 44px; padding: 0 16px; border-radius: 22px; border: 1px solid var(--line); background: var(--bg); font-weight: 600; }
+.chip:hover:not(:disabled) { border-color: var(--accent); }
+.chip[aria-pressed="true"] { background: var(--brand); color: var(--brand-ink); border-color: var(--accent); }
+.chip small { font-weight: 400; color: var(--ink-2); margin-left: 4px; }
+.whoami { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 15px; flex-wrap: wrap; }
+.linkbtn { background: none; border: 0; padding: 8px 0; color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; min-height: 40px; text-align: left; }
+
+/* summary */
+.summary { display: flex; align-items: center; gap: 14px; }
+.summary .num { font: 700 56px/0.9 var(--font-display); color: var(--no); font-variant-numeric: tabular-nums; min-width: 40px; text-align: center; }
+.summary .txt { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font-size: 15px; }
+.summary .txt strong { font-weight: 600; }
+.summary .txt span { color: var(--ink-2); font-size: 13px; }
+
+.month { font: 600 15px/1 var(--font-display); letter-spacing: .12em; text-transform: uppercase; color: var(--month-ink); padding: 10px 2px 0; }
+.group { display: flex; flex-direction: column; gap: 12px; }
+
+/* match card */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.card.next { border: 2px solid var(--accent); padding: 13px; }
+.card.low { background: var(--no-bg); border: 2px solid var(--no); padding: 13px; }
+.card.past { opacity: .82; }
+.card-main { display: flex; gap: 14px; align-items: flex-start; }
+.date { flex: none; width: 58px; padding: 7px 0 8px; border-radius: 10px; background: var(--surface-2); display: flex; flex-direction: column; align-items: center; line-height: 1; }
+.card.low .date { background: var(--bg); }
+.date .wd, .date .mo { font: 600 13px/1 var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.date .d { font: 700 32px/1.05 var(--font-display); font-variant-numeric: tabular-nums; }
+.info { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.kicker { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.tag { font: 700 17px/1 var(--font-display); letter-spacing: .08em; text-transform: uppercase; padding: 8px 12px 7px; border-radius: 8px; }
+.tag.home { background: var(--home); color: var(--brand-ink); }
+.tag.away { background: var(--ink); color: var(--bg); }
+.tag.tbd { border: 1px dashed var(--ink-2); color: var(--ink-2); }
+.time { font: 600 18px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.nexttag { font-size: 12px; font-weight: 600; color: var(--accent); }
+.opp { font: 700 27px/1.05 var(--font-display); overflow-wrap: anywhere; text-wrap: balance; }
+.opp.muted { color: var(--ink-2); font-weight: 600; }
+.where { font-size: 14px; color: var(--ink-2); overflow-wrap: anywhere; }
+.navtile { flex: none; min-width: 72px; padding: 7px 8px 6px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: var(--brand); color: var(--brand-ink); text-decoration: none; font: 700 12px/1 var(--font-display); letter-spacing: .08em; text-transform: uppercase; }
+.navtile svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.navtile:active { opacity: .8; }
+
+.bar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.bar i { height: 8px; border-radius: 4px; background: var(--line); }
+.bar i.yes { background: var(--bar-yes); box-shadow: inset 0 0 0 1px var(--yes); }
+.bar i.late { background: var(--bar-late); box-shadow: inset 0 0 0 1px var(--late); }
+.bar i.no { background: var(--bar-no); box-shadow: inset 0 0 0 1px var(--no); }
+.lowmsg { font-size: 14px; color: var(--no); }
+.lowmsg strong { font-weight: 700; }
+
+.mine { display: flex; flex-direction: column; gap: 6px; }
+.mine .lab { font: 600 13px/1 var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.opt { min-height: 46px; padding: 0 6px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 15px; font-weight: 600; min-width: 0; }
+.card.low .opt { background: var(--surface); }
+.opt:hover:not(:disabled) { border-color: var(--ink-2); }
+.opt[aria-pressed="true"].yes { background: var(--yes); border-color: var(--yes); color: var(--on-status); }
+.opt[aria-pressed="true"].late { background: var(--late); border-color: var(--late); color: var(--on-status); }
+.opt[aria-pressed="true"].no { background: var(--no); border-color: var(--no); color: var(--on-status); }
+.opt.mini { min-height: 36px; font-size: 13px; border-radius: 8px; }
+
+.more { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 44px; padding: 0 2px; border: 0; background: none; text-align: left; font-size: 14px; color: var(--ink-2); }
+.more b { color: var(--ink); font-weight: 600; }
+.chev { flex: none; width: 10px; height: 10px; border-right: 2px solid var(--ink-2); border-bottom: 2px solid var(--ink-2); transform: rotate(45deg); transition: transform .15s; margin-right: 4px; }
+.more[aria-expanded="true"] .chev { transform: rotate(-135deg); }
+
+.detail { display: flex; flex-direction: column; gap: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+.roster { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.roster li { display: flex; flex-direction: column; gap: 6px; }
+.rrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.pname { min-width: 0; font-size: 15px; overflow-wrap: anywhere; }
+.pname small { color: var(--ink-2); font-size: 12px; margin-left: 4px; }
+.badge { display: inline-block; margin-left: 6px; padding: 2px 5px; border-radius: 4px; background: var(--brand); color: var(--brand-ink); font: 700 11px/1 var(--font-body); vertical-align: 1px; }
+.pill { flex: none; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 12px; }
+.pill.yes { background: var(--yes-bg); color: var(--yes); }
+.pill.late { background: var(--late-bg); color: var(--late); }
+.pill.no { background: var(--no-bg); color: var(--no); }
+.card.low .pill.no { background: var(--surface); }
+.addr { font-size: 14px; color: var(--ink-2); }
+.acts { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 0 16px; }
+.panel[hidden] { display: none; }
+.panel > summary { min-height: 52px; display: flex; align-items: center; font-weight: 600; cursor: pointer; }
+.panel[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+.panel .body { display: flex; flex-direction: column; gap: 12px; padding-bottom: 16px; font-size: 14px; color: var(--ink-2); }
+.panel .cards { display: flex; flex-direction: column; gap: 12px; padding-bottom: 16px; }
+.panel h3 { font: 600 15px/1 var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--ink); }
+.panel input[type="file"] { font: inherit; max-width: 100%; }
+.links { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.links li { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 40px; }
+.btn { align-self: flex-start; min-height: 46px; padding: 0 18px; border-radius: 10px; border: 0; background: var(--brand); color: var(--brand-ink); font-weight: 600; }
+.lrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: nowrap; }
+.lname { flex: 1; min-width: 0; color: var(--ink); font-size: 16px; overflow-wrap: anywhere; }
+.lname .badge { margin-left: 6px; }
+.sdot { display: inline-block; width: 10px; height: 10px; margin-left: 8px; border-radius: 50%; border: 2px solid var(--ink-2); box-sizing: border-box; vertical-align: 1px; }
+.sdot.ok { background: var(--accent); border-color: var(--accent); }
+.lact { flex: none; display: grid; grid-template-columns: 5.3em auto; column-gap: 12px; align-items: center; }
+.lact .linkbtn { font-size: 15px; min-height: 36px; padding: 4px 0; white-space: nowrap; }
+.lact .slot { text-align: right; }
+.links li { flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 4px; }
+.links small { color: var(--ink-2); }
+.danger { color: var(--no); }
+.btn.danger { background: var(--no); color: var(--on-status); }
+.btn.small { min-height: 40px; padding: 0 14px; }
+.confirm { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px; background: var(--no-bg); border-radius: 10px; padding: 10px 12px; color: var(--ink); }
+.addform { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 14px; }
+.addform label { font-weight: 600; color: var(--ink); }
+.addform textarea { font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; box-sizing: border-box; resize: vertical; }
+.addform input, .addform select { font: inherit; min-height: 46px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; }
+.foot { font-size: 13px; color: var(--ink-2); }
+
+#toast { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; padding: 0 max(16px, env(safe-area-inset-left, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-right, 0px)); pointer-events: none; opacity: 0; transform: translateY(8px); transition: opacity .2s, transform .2s; }
+#toast.show { opacity: 1; transform: none; }
+#toast span { background: var(--ink); color: var(--bg); padding: 12px 16px; border-radius: 12px; font-size: 14px; max-width: 520px; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.installbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.installbar[hidden] { display: none; }
+.installbar p { margin: 0; font-size: 14px; }
+.installbar .steps { flex-basis: 100%; }
+.installbar.col { flex-wrap: wrap; }
+.qrbox { align-self: center; background: #fff; padding: 12px; border-radius: 14px; line-height: 0; }
+.qrbox svg { width: 220px; height: 220px; display: block; }
+.invite-url { align-self: center; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; text-align: center; }
+.invite-text { width: 100%; min-height: 190px; font: inherit; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); resize: vertical; box-sizing: border-box; }
+.invite-acts { display: flex; flex-wrap: wrap; gap: 10px; }
+.bell { position: relative; margin-left: auto; flex: none; width: 46px; height: 46px; border-radius: 50%; border: 0; background: rgba(255,255,255,.14); color: var(--brand-ink); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.bell[hidden] { display: none; }
+.bell svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.bell .badge { position: absolute; top: -2px; right: -2px; min-width: 22px; height: 22px; padding: 0 6px; box-sizing: border-box; border-radius: 11px; background: #E5372B; color: #fff; font: 700 13px/22px var(--font-body); text-align: center; box-shadow: 0 0 0 2px var(--brand); }
+.bell .badge[hidden] { display: none; }
+dialog.inbox { width: min(100% - 24px, 560px); max-height: 82vh; padding: 0; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); overflow: hidden; }
+dialog.inbox[open] { display: flex; flex-direction: column; }
+dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
+.inbox-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.inbox-head h2 { margin: 0; font: 700 22px/1.1 var(--font-display); }
+.inbox ul { list-style: none; margin: 0; padding: 0 18px 8px; overflow-y: auto; }
+.mw { position: relative; overflow: hidden; border-bottom: 1px solid var(--line); transition: max-height .25s ease, opacity .25s ease; max-height: 400px; }
+.mw:last-child { border-bottom: 0; }
+.mw.gone { max-height: 0; opacity: 0; border-bottom-width: 0; }
+.mdel { position: absolute; top: 0; right: 0; bottom: 0; width: 88px; border: 0; background: #C62F25; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.mdel svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.msg { position: relative; padding: 14px 0; background: var(--surface); touch-action: pan-y; transition: transform .2s ease; }
+.msg.dragging { transition: none; }
+.msg.open { transform: translateX(-88px); }
+.msg .mhead { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.msg small { color: var(--ink-2); white-space: nowrap; }
+.msg p { margin: 4px 0 0; overflow-wrap: anywhere; }
+.msg.new { border-left: 4px solid #E5372B; padding-left: 12px; }
+.msg.empty { color: var(--ink-2); }
+.noteam #summary, .noteam #list, .noteam #pastbox { display: none; }
+.joinbox { display: flex; flex-direction: column; gap: 10px; }
+.joinbox input { text-transform: uppercase; letter-spacing: .12em; font-weight: 700; }
+.chk { display: flex; align-items: center; gap: 10px; }
+.chk input { width: auto; min-height: 0; flex: none; }
+.huerow { display: flex; align-items: center; gap: 12px; }
+.huerow input[type=range] { flex: 1; min-height: 32px; padding: 0; }
+.huedot { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--line); }
+.teamitem { padding: 12px 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.teamitem:first-child { border-top: 0; }
+.teamitem .th { display: flex; align-items: center; gap: 10px; }
+.teamitem .tcodes { font-size: 14px; color: var(--ink-2); overflow-wrap: anywhere; }
+.teamitem .tcodes b { color: var(--ink); letter-spacing: .08em; }
+.teamitem .tacts { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.teamitem.off .tn { opacity: .55; text-decoration: line-through; }
+.codeout { background: var(--surface-2); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.codeout textarea { width: 100%; min-height: 150px; font: inherit; font-size: 14px; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); box-sizing: border-box; }
+@media (max-width: 380px) {
+  .opt { font-size: 14px; gap: 4px; }
+  .opt svg { display: none; }
+  .opp { font-size: 24px; }
+}
+</style>
+
+<div class="top"><div class="in">
+  <img class="board" alt="" width="54" height="54" src="data:image/png;base64,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">
+  <div>
+    <h1 id="teamname">Wie gooit er mee?</h1>
+    <p class="sub" id="season">Wie gooit er mee? Seizoen 2026-2027</p>
+  </div>
+  <button type="button" class="bell" id="bell" hidden aria-label="Berichten"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><span class="badge" id="bellbadge" hidden></span></button>
+</div></div>
+<dialog class="inbox" id="inbox" aria-labelledby="inboxtitle">
+  <div class="inbox-head"><h2 id="inboxtitle">Berichten</h2><button type="button" class="linkbtn" id="inboxclose">Sluiten</button></div>
+  <ul id="inboxlist"></ul>
+</dialog>
+
+<main class="in">
+  <p class="note" id="note" hidden></p>
+  <div class="installbar" id="installbar" hidden>
+    <p><strong>Zet de app op je telefoon</strong><br>Dan open je hem met één tik.</p>
+    <button type="button" class="btn small" id="installbtn">App installeren</button>
+    <p class="steps" id="installsteps" hidden></p>
+  </div>
+  <div id="who"></div>
+  <div id="summary"></div>
+  <div id="list" class="group"></div>
+
+  <details class="panel" id="pastbox" hidden>
+    <summary id="pastsum">Gespeeld</summary>
+    <div class="cards" id="pastlist"></div>
+  </details>
+
+  <details class="panel" id="admin" hidden>
+    <summary>Beheer voor de captain</summary>
+    <div class="body">
+      <h3>Wedstrijden inladen</h3>
+      <p>Kies het .ics-bestand uit Teambeheer van de dartbond. Nieuwe wedstrijden worden toegevoegd en gewijzigde datums of locaties worden bijgewerkt. Antwoorden van spelers blijven staan.</p>
+      <input type="file" id="icsfile" accept=".ics,text/calendar">
+      <div id="importout"></div>
+      <h3>Spelers</h3>
+      <p>Elke speler kiest zelf zijn naam. Een verkeerde keuze maak je hier los, dan kan de speler opnieuw kiezen. Een gevuld groen bolletje betekent dat de speler zijn naam heeft gekozen, een leeg bolletje dat dit nog niet is gebeurd.</p>
+      <ul class="links" id="claimlist"></ul>
+      <form id="addform" class="addform">
+        <label for="newname">Nieuwe speler</label>
+        <input type="text" id="newname" maxlength="40" autocomplete="off" placeholder="Voor- en achternaam" required>
+        <label for="newrole">Functie</label>
+        <select id="newrole">
+          <option value="">Speler</option>
+          <option value="C">Captain (C)</option>
+          <option value="RC">Reserve-captain (RC)</option>
+        </select>
+        <button class="btn" type="submit">Speler toevoegen</button>
+      </form>
+      <h3>Team</h3>
+      <form id="teamform" class="addform">
+        <label for="tname">Teamnaam</label>
+        <input id="tname" maxlength="60" required>
+        <p class="note">Gebruik de naam zoals die in Teambeheer staat. Anders herkent het inladen van wedstrijden niet wat thuis en uit is.</p>
+        <label for="tmin">Minimaal aantal spelers per wedstrijd</label>
+        <input id="tmin" type="number" min="1" max="20" required>
+        <button class="btn" type="submit">Opslaan</button>
+      </form>
+      <p id="teamcode"></p>
+      <button type="button" class="linkbtn" id="newcode">Nieuwe teamcode maken</button>
+      <h3>Wie mag beheren</h3>
+      <p>Beheerders kunnen wedstrijden en spelers beheren, antwoorden voor anderen invullen en meldingen sturen. Zij krijgen ook de melding als een wedstrijd onder de 4 spelers komt. Alleen spelers die hun naam hebben gekozen staan hier.</p>
+      <ul class="links" id="adminlist"></ul>
+      <h3>Melding sturen</h3>
+      <p>Stuurt een melding naar iedereen, of alleen naar de spelers die je kiest. Het bericht komt alleen aan bij spelers die meldingen hebben aangezet.</p>
+      <form id="msgform" class="addform">
+        <label id="msgtolabel">Aan</label>
+        <div class="chips" id="msgto" role="group" aria-labelledby="msgtolabel"></div>
+        <label for="msgtitle">Titel</label>
+        <input type="text" id="msgtitle" maxlength="60" autocomplete="off" placeholder="Bijv. Wedstrijd verzet" required>
+        <label for="msgbody">Bericht</label>
+        <textarea id="msgbody" rows="3" maxlength="200" placeholder="Schrijf je bericht" required></textarea>
+        <button class="btn" type="submit" id="msgsend">Verstuur naar iedereen</button>
+        <button type="button" class="linkbtn" data-act="testpush">Alleen een testmelding sturen</button>
+      </form>
+      <h3>Wedstrijden beheren</h3>
+      <form id="matchform" class="addform">
+        <label id="mflabel" for="mdate">Wedstrijd toevoegen</label>
+        <input type="datetime-local" id="mdate" required>
+        <label for="mopp">Tegenstander</label>
+        <input type="text" id="mopp" maxlength="80" autocomplete="off" placeholder="Nog niet bekend">
+        <label for="mhome">Thuis of uit</label>
+        <select id="mhome"><option value="">Nog onbekend</option><option value="1">Thuis</option><option value="0">Uit</option></select>
+        <label for="mloc">Locatie</label>
+        <input type="text" id="mloc" maxlength="200" autocomplete="off" placeholder="Café, straat 1, plaats">
+        <label><input type="checkbox" id="mnotify" style="width:auto;min-height:0;margin-right:8px">Stuur het team een melding over deze wijziging</label>
+        <div class="acts"><button class="btn" type="submit" id="msave">Wedstrijd toevoegen</button><button type="button" class="linkbtn" id="mcancel" data-act="match-cancel" hidden>Annuleer wijziging</button></div>
+      </form>
+      <details id="mdet"><summary id="mdsum">Alle wedstrijden</summary><ul class="links" id="matchlist"></ul></details>
+      <h3>Nieuw seizoen</h3>
+      <p>Aan het einde van het seizoen haal je hier alle wedstrijden en alle antwoorden weg. De spelers en hun accounts blijven staan. Importeer daarna de nieuwe speelkalender hierboven.</p>
+      <div id="seasonbox"></div>
+    </div>
+  </details>
+
+  <p class="foot">Speeldata kunnen veranderen. Controleer altijd de actuele datum op <a href="https://www.pdbdarts.nl/" target="_blank" rel="noopener">pdbdarts.nl</a> of in de Teambeheer-app.</p>
+  <details class="panel" id="superbox" hidden>
+    <summary>Beheerder: alle teams</summary>
+    <div class="body">
+      <h3>Nieuw team</h3>
+      <form id="newteam" class="addform">
+        <label for="ntname">Teamnaam</label>
+        <input id="ntname" maxlength="60" required>
+        <label for="nthue">Kleurtint</label>
+        <div class="huerow"><input id="nthue" type="range" min="0" max="359" value="210"><span class="huedot" id="nthuedot"></span></div>
+        <label class="chk"><input id="ntclassic" type="checkbox"> Klassiek groen (alleen voor mijn eigen team)</label>
+        <label for="ntmin">Minimaal aantal spelers</label>
+        <input id="ntmin" type="number" min="1" max="20" value="4">
+        <button class="btn" type="submit">Team aanmaken</button>
+      </form>
+      <div id="newteamout"></div>
+      <h3>Alle teams</h3>
+      <ul class="links" id="teamlist"></ul>
+    </div>
+  </details>
+
+  <details class="panel" id="invitebox" hidden>
+    <summary>Nieuwe speler uitnodigen</summary>
+    <div class="body">
+      <h3>QR-code</h3>
+      <p>Laat de nieuwe speler deze code scannen met de camera van zijn telefoon. Dan opent de app meteen.</p>
+      <div class="qrbox" id="qrbox"></div>
+      <div class="invite-url" id="inviteurl"></div>
+      <h3>Uitnodiging</h3>
+      <p>Deel dit bericht via WhatsApp of een andere app.</p>
+      <textarea id="invitetext" class="invite-text" readonly></textarea>
+      <div class="invite-acts">
+        <button type="button" class="btn small" id="invshare" hidden>Uitnodiging delen</button>
+        <button type="button" class="btn small" id="invcopy">Tekst kopiëren</button>
+      </div>
+    </div>
+  </details>
+
+</main>
+
+<div id="toast" role="status" aria-live="polite"><span id="toasttext"></span></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  'use strict';
+  var TZ = 'Europe/Amsterdam';
+  var TEAM = '';           /* teamnaam, komt uit de database */
+  var MIN = 4;             /* minimum aantal spelers, komt uit de database */
+  var BUILTIN = [];
+  var BUILTIN_PLAYERS = [];
+  var PLAYERS = BUILTIN_PLAYERS.slice();
+  var ORDER = ['yes', 'late', 'no'];
+  var LABEL = { yes: 'Kan', late: 'Komt later', no: 'Kan niet' };
+  var ICON = {
+    yes: '<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M4 10.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    late: '<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 6.5V10l2.5 1.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    no: '<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>'
+  };
+
+  var db = null;
+  var state = {
+    matches: BUILTIN.slice(),
+    claims: {},          /* account id -> { p: playerId } */
+    answers: {},         /* doc id -> { st: { matchId: { s, t } } } */
+    uid: null,
+    isCaptain: false,
+    canWrite: null,
+    dbState: 'pending',
+    claimsReady: false,
+    expanded: {},
+    proxy: false,
+    onlyLow: false,
+    confirmDel: null,
+    confirmMatch: null,
+    editMatch: null,
+    messages: [], reads: {}, hidden: {}, fresh: {},
+    msgTo: [],           /* leeg = iedereen */
+    seasonAsk: false,
+    pending: null
+  };
+
+  /* ---------- helpers ---------- */
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function $(id) { return document.getElementById(id); }
+  function byStart(a, b) { return a.start < b.start ? -1 : a.start > b.start ? 1 : 0; }
+  function player(id) { for (var i = 0; i < PLAYERS.length; i++) if (PLAYERS[i].id === id) return PLAYERS[i]; return null; }
+
+  var fWd = new Intl.DateTimeFormat('nl-NL', { weekday: 'short', timeZone: TZ });
+  var fDay = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', timeZone: TZ });
+  var fMon = new Intl.DateTimeFormat('nl-NL', { month: 'short', timeZone: TZ });
+  var fMonLong = new Intl.DateTimeFormat('nl-NL', { month: 'long', year: 'numeric', timeZone: TZ });
+  var fTime = new Intl.DateTimeFormat('nl-NL', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: TZ });
+  function clean(s) { return s.replace(/\./g, ''); }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  function locParts(m) { return (m.loc || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean); }
+  function navUrl(m) { return 'https://www.google.com/maps/dir/?api=1&amp;destination=' + encodeURIComponent(m.loc); }
+  var PIN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+  function whereLine(m) {
+    var p = locParts(m);
+    if (!p.length) return 'Locatie nog niet bekend';
+    return p.length > 1 ? p[0] + ' · ' + p[p.length - 1] : p[0];
+  }
+
+  /* who is who: an account id is tied to one player name */
+  function meId() {
+    var c = state.uid && state.claims[state.uid];
+    return c && player(c.p) ? c.p : null;
+  }
+  function claimUid(pid) {
+    for (var u in state.claims) if (state.claims[u] && state.claims[u].p === pid) return u;
+    return null;
+  }
+  function docPlayer(docId) {
+    if (docId.indexOf('p_') === 0) return docId.slice(2);
+    var c = state.claims[docId];
+    return c ? c.p : null;
+  }
+  /* everyone counts as "Kan" until they say otherwise; the newest answer wins */
+  function statusOf(mid, pid) {
+    var best = null;
+    for (var id in state.answers) {
+      if (docPlayer(id) !== pid) continue;
+      var st = state.answers[id].st, e = st && st[mid];
+      if (e && typeof e.t === 'number' && ORDER.indexOf(e.s) >= 0 && (!best || e.t > best.t)) best = e;
+    }
+    return best ? best.s : 'yes';
+  }
+  function counts(mid) {
+    var c = { yes: 0, late: 0, no: 0 };
+    PLAYERS.forEach(function (p) { c[statusOf(mid, p.id)]++; });
+    return c;
+  }
+  function present(c) { return c.yes + c.late; }
+  function canEditNow() {
+    return !!db && !!state.uid && state.dbState !== 'none' && state.dbState !== 'error' && state.canWrite !== false;
+  }
+
+  var toastTimer = null;
+  function toast(msg) {
+    $('toasttext').textContent = msg;
+    $('toast').className = 'show';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { $('toast').className = ''; }, 4500);
+  }
+
+  /* ---------- writing ---------- */
+  var sb = null;
+  function run(q) { return Promise.resolve(q).then(function (r) { if (r && r.error) throw r.error; return r; }); }
+  function rpcFail(e) { toast((e && e.message) ? e.message : 'Dat is niet gelukt. Probeer het later nog eens.'); }
+  function writeFail(e) {
+    var m = (e && e.message) || '';
+    toast(/row-level|permission/i.test(m) ? 'Opslaan is geweigerd. Je mag alleen je eigen antwoord aanpassen.' : 'Opslaan is niet gelukt. Probeer het over een paar seconden nog eens.');
+  }
+  function writeAnswer(mid, pid, s) {
+    if (!sb || !state.uid) { toast('Log in om je antwoord op te slaan.'); return; }
+    if (pid !== meId() && !state.isCaptain) { toast('Je kunt alleen je eigen antwoord aanpassen.'); return; }
+    var t = Date.now(), k = 'p_' + pid;
+    (state.answers[k] = state.answers[k] || { st: {} }).st[mid] = { s: s, t: t };
+    render();
+    run(sb.from('answers').upsert({ match_id: mid, player_id: pid, team_id: state.team.id, status: s, updated_by: state.uid, updated_at: new Date(t).toISOString() }, { onConflict: 'match_id,player_id' }))
+      .catch(function (e) { writeFail(e); loadAll(); });
+  }
+  function claim(pid) {
+    if (!sb || !state.uid) return;
+    if (claimUid(pid)) { toast('Die naam is al gekozen. Vraag de captain om hem los te maken.'); return; }
+    run(sb.rpc('claim_player', { p_player: pid })).then(loadAll).catch(rpcFail);
+  }
+  function setAdmin(uid, v) {
+    if (!sb || !uid || uid === state.uid) return;
+    run(sb.rpc('set_admin', { p_user: uid, p_value: v }))
+      .then(function () { toast(v ? 'Beheerrechten gegeven.' : 'Beheerrechten weggehaald.'); return loadAll(); }).catch(writeFail);
+  }
+  function unclaim(uid) { if (sb && uid) run(sb.rpc('release_player', { p_user: uid })).then(loadAll).catch(rpcFail); }
+  function slug(s) { return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+  function addPlayer(name, role) {
+    if (!sb || !state.isCaptain) return;
+    name = name.trim().replace(/\s+/g, ' ');
+    if (!name) { toast('Vul een naam in.'); return; }
+    var first = name.split(' ')[0], base = slug(first) || 'speler', id = base + '-' + Math.random().toString(36).slice(2, 7);
+    run(sb.from('players').insert({ id: id, team_id: state.team.id, name: name, short: first, role: role || '', sort: PLAYERS.length + 1 }))
+      .then(function () { $('newname').value = ''; toast(first + ' is toegevoegd.'); return loadAll(); }).catch(writeFail);
+  }
+  function removePlayer(pid) {
+    if (!sb || !state.isCaptain) return;
+    state.confirmDel = null;
+    run(sb.from('players').delete().eq('id', pid)).then(function () { toast('Speler verwijderd.'); return loadAll(); }).catch(writeFail);
+    render();
+  }
+  $('addform').addEventListener('submit', function (ev) { ev.preventDefault(); addPlayer($('newname').value, $('newrole').value); });
+
+  /* ---------- rendering ---------- */
+  function renderNote() {
+    var n = $('note'), t = '';
+    if (state.dbState === 'none') t = 'Log in om de antwoorden te zien en in te vullen.';
+    else if (state.dbState === 'pending') t = 'Antwoorden laden...';
+    else if (state.dbState === 'slow') t = 'De antwoorden zijn nog niet opgehaald. Wat je ziet kan verouderd zijn.';
+    else if (state.dbState === 'error') t = 'De antwoorden konden niet worden geladen. Open de pagina opnieuw.';
+    else if (state.canWrite === false) t = 'Je kunt meekijken maar niet invullen. Vraag de captain om je uit te nodigen met bewerkrechten.';
+    n.hidden = !t;
+    n.textContent = t;
+  }
+
+  function renderWho() {
+    var el = $('who');
+    if (!state.uid) {
+      if (!$('authform')) el.innerHTML = '<section class="who"><h2>Inloggen</h2><p>Log in met je e-mailadres. Heb je nog geen account, kies dan Nieuw account maken.</p>' +
+        '<form id="authform" class="addform" style="border:0;padding:0"><input id="aemail" type="email" autocomplete="email" placeholder="E-mailadres" required>' +
+        '<input id="apass" type="password" minlength="6" autocomplete="current-password" placeholder="Wachtwoord (minimaal 6 tekens)" required>' +
+        '<div class="acts"><button class="btn" type="submit">Inloggen</button><button type="button" class="linkbtn" data-act="signup">Nieuw account maken</button></div></form></section>';
+      return;
+    }
+    if (!state.claimsReady) { el.innerHTML = ''; return; }
+    if (!state.team) {
+      var saved = ''; try { saved = localStorage.getItem('joincode') || ''; } catch (e) {}
+      el.innerHTML = '<section class="who"><h2>Sluit aan bij je team</h2><p>Vul de teamcode in die je van je captain hebt gekregen.</p>' +
+        '<form id="joinform" class="joinbox"><input id="joincode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="Teamcode" value="' + esc(saved) + '" required>' +
+        '<div class="acts"><button class="btn" type="submit">Aansluiten</button></div></form></section>' +
+        '<div class="acts"><button class="linkbtn" data-act="logout" data-fk="logout">Uitloggen</button></div>';
+      return;
+    }
+    var me = meId(), h;
+    if (!me) {
+      h = '<section class="who"><h2>Wie ben jij?</h2><p>Kies je naam. Daarna kan alleen jij jouw antwoorden aanpassen.</p><div class="chips">' +
+        PLAYERS.map(function (p) {
+          var taken = !!claimUid(p.id);
+          return '<button class="chip" data-act="claim" data-pid="' + p.id + '" data-fk="who:' + p.id + '"' + (taken ? ' disabled' : '') + '>' + esc(p.short) + (taken ? '<small>gekozen</small>' : '') + '</button>';
+        }).join('') + '</div></section>';
+    } else {
+      h = '<div class="whoami"><span>Je vult in als <strong>' + esc(player(me).short) + '</strong>' + (state.isCaptain ? ' (captain)' : '') + '</span>' +
+        '<button class="linkbtn" data-act="unclaim-self" data-fk="unclaim-self">Dit ben ik niet</button></div>';
+    }
+    h += '<div class="acts"><button class="linkbtn" data-act="push" data-fk="push">' + (state.push ? 'Meldingen staan aan \u2713' : 'Meldingen aanzetten') + '</button><button class="linkbtn" data-act="logout" data-fk="logout">Uitloggen</button></div>';
+    el.innerHTML = h;
+  }
+
+  function split() {
+    var now = Date.now(), up = [], past = [];
+    state.matches.slice().sort(byStart).forEach(function (m) {
+      (Date.parse(m.start) + 3 * 3600e3 < now ? past : up).push(m);
+    });
+    past.reverse();
+    return { up: up, past: past };
+  }
+  function isLow(m) { return present(counts(m.id)) < MIN; }
+
+  function renderSummary(up) {
+    var el = $('summary');
+    var low = up.filter(isLow).length;
+    if (!up.length) { el.innerHTML = ''; return; }
+    if (!low) {
+      el.innerHTML = '<div class="summary"><div class="txt"><strong>Alle komende wedstrijden hebben minimaal ' + MIN + ' spelers.</strong></div></div>';
+      return;
+    }
+    el.innerHTML = '<div class="summary"><div class="num">' + low + '</div><div class="txt"><strong>' +
+      (low === 1 ? 'wedstrijd heeft' : 'wedstrijden hebben') + ' te weinig spelers</strong><span>Er zijn minimaal ' + MIN + ' spelers nodig.</span>' +
+      '<button class="linkbtn" data-act="onlylow" aria-pressed="' + state.onlyLow + '" data-fk="onlylow">' +
+      (state.onlyLow ? 'Toon alle wedstrijden' : 'Toon alleen deze wedstrijden') + '</button></div></div>';
+  }
+
+  function optButtons(mid, pid, cur, mini, disabled) {
+    return ORDER.map(function (s) {
+      return '<button class="opt ' + s + (mini ? ' mini' : '') + '" data-act="status" data-mid="' + mid + '" data-pid="' + pid + '" data-s="' + s +
+        '" data-fk="' + mid + ':' + pid + ':' + s + '" aria-pressed="' + (cur === s) + '"' + (disabled ? ' disabled' : '') + '>' +
+        (mini ? '' : ICON[s]) + '<span>' + LABEL[s] + '</span></button>';
+    }).join('');
+  }
+
+  function card(m, isNext, isPast) {
+    var c = counts(m.id), pres = present(c), me = meId();
+    var low = !isPast && pres < MIN;
+    var d = new Date(m.start);
+    var tag = m.home === true ? '<span class="tag home">Thuis</span>' : m.home === false ? '<span class="tag away">Uit</span>' : '<span class="tag tbd">Nog onbekend</span>';
+    var opp = m.opp ? '<h3 class="opp">' + esc(m.opp) + '</h3>' : '<h3 class="opp muted">Tegenstander nog niet bekend</h3>';
+    var cells = [];
+    ORDER.forEach(function (k) { for (var i = 0; i < c[k]; i++) cells.push('<i class="' + k + '"></i>'); });
+    var info = '<b>' + pres + ' aanwezig</b>' + (c.late ? ' (' + c.late + ' komt later)' : '') + (c.no ? ' · ' + c.no + ' kan niet' : '');
+    var open = state.expanded[m.id];
+    if (open === undefined) open = isNext;
+    var dis = !canEditNow();
+
+    var h = '<article class="card' + (isNext ? ' next' : '') + (low ? ' low' : '') + (isPast ? ' past' : '') + '">';
+    h += '<div class="card-main"><div class="date"><span class="wd">' + esc(clean(fWd.format(d))) + '</span><span class="d">' + esc(fDay.format(d)) +
+      '</span><span class="mo">' + esc(clean(fMon.format(d))) + '</span></div><div class="info"><div class="kicker">' + tag +
+      '<span class="time">' + esc(fTime.format(d)) + '</span>' + (isNext ? '<span class="nexttag">Eerstvolgende</span>' : '') + '</div>' +
+      opp + '<p class="where">' + esc(whereLine(m)) + '</p></div>' +
+      (m.home === false && locParts(m).length ? '<a class="navtile" href="' + navUrl(m) + '" target="_blank" rel="noopener" aria-label="Navigeer naar ' + esc(m.loc) + '" title="Navigeer">' + PIN + '<span>Navigeer</span></a>' : '') + '</div>';
+    h += '<div class="bar" style="grid-template-columns:repeat(' + Math.max(PLAYERS.length, 1) + ',1fr)" aria-hidden="true">' + cells.join('') + '</div>';
+    if (low) {
+      h += '<p class="lowmsg"><strong>' + (pres === 0 ? 'Niemand aanwezig.' : 'Nog maar ' + pres + ' aanwezig.') + '</strong> Je hebt er minimaal ' + MIN +
+        ' nodig. Neem contact op met de tegenstander om de wedstrijd te verzetten.</p>';
+    }
+    if (me && !isPast) {
+      h += '<div class="mine"><span class="lab">Jouw antwoord</span><div class="seg">' + optButtons(m.id, me, statusOf(m.id, me), false, dis) + '</div></div>';
+    }
+    h += '<button class="more" data-act="toggle" data-mid="' + m.id + '" data-fk="t:' + m.id + '" aria-expanded="' + !!open + '"><span>' + info + '</span><span class="chev"></span></button>';
+    if (open) {
+      var p = locParts(m);
+      h += '<div class="detail"><ul class="roster">';
+      PLAYERS.forEach(function (pl) {
+        var s = statusOf(m.id, pl.id);
+        h += '<li><div class="rrow"><span class="pname">' + esc(pl.name) + (pl.role ? '<span class="badge">' + pl.role + '</span>' : '') +
+          (pl.id === me ? '<small>(jij)</small>' : '') + '</span><span class="pill ' + s + '">' + LABEL[s] + '</span></div>';
+        if (state.proxy && state.isCaptain && !isPast) h += '<div class="seg">' + optButtons(m.id, pl.id, s, true, dis) + '</div>';
+        h += '</li>';
+      });
+      h += '</ul>';
+      if (p.length > 1) h += '<p class="addr">' + esc(p.slice(1).join(', ')) + '</p>';
+      h += '<div class="acts">';
+      if (p.length) h += '<a href="' + (m.home === false ? navUrl(m) : 'https://www.google.com/maps/search/?api=1&amp;query=' + encodeURIComponent(m.loc)) + '" target="_blank" rel="noopener">' + (m.home === false ? 'Navigeer naar de wedstrijd' : 'Route openen') + '</a>';
+      if (state.isCaptain && !isPast) h += '<button class="linkbtn" data-act="proxy" data-fk="proxy:' + m.id + '" aria-pressed="' + state.proxy + '">' + (state.proxy ? 'Klaar met invullen voor anderen' : 'Invullen voor iemand anders') + '</button>';
+      h += '</div></div>';
+    }
+    return h + '</article>';
+  }
+
+  function renderLists() {
+    var sp = split();
+    var up = sp.up;
+    renderSummary(up);
+    var shown = state.onlyLow ? up.filter(isLow) : up;
+    var html = '', lastMonth = '', grp = false;
+    if (!shown.length) html = '<p class="note">' + (state.onlyLow ? 'Geen wedstrijden met te weinig spelers.' : 'Er zijn nog geen komende wedstrijden.') + '</p>';
+    shown.forEach(function (m) {
+      var mk = cap(fMonLong.format(new Date(m.start)));
+      if (mk !== lastMonth) {
+        if (grp) html += '</div>';
+        html += '<h2 class="month">' + esc(mk) + '</h2><div class="group">';
+        grp = true; lastMonth = mk;
+      }
+      html += card(m, up.length && m.id === up[0].id, false);
+    });
+    if (grp) html += '</div>';
+    $('list').innerHTML = html;
+
+    var pb = $('pastbox');
+    pb.hidden = !sp.past.length;
+    $('pastsum').textContent = 'Gespeeld (' + sp.past.length + ')';
+    $('pastlist').innerHTML = sp.past.map(function (m) { return card(m, false, true); }).join('');
+  }
+
+  function renderAdmin() {
+    $('admin').hidden = !state.isCaptain;
+    $('invitebox').hidden = !state.isCaptain;
+    if (!state.isCaptain) return;
+    renderMsgTo();
+    if (state.team) {
+      if (document.activeElement !== $('tname')) $('tname').value = state.team.name;
+      if (document.activeElement !== $('tmin')) $('tmin').value = state.team.min_players;
+      $('teamcode').innerHTML = state.codes ? 'Teamcode voor nieuwe spelers: <strong>' + esc(state.codes.join_code) + '</strong>' : '';
+    }
+    $('adminlist').innerHTML = PLAYERS.map(function (p) {
+      var u = claimUid(p.id);
+      if (!u) return '';
+      var isAdm = !!(state.claims[u] && state.claims[u].a), me = u === state.uid;
+      return '<li><div class="lrow"><span class="lname">' + esc(p.name) + (p.role ? '<span class="badge">' + p.role + '</span>' : '') +
+        (isAdm ? '<span class="badge">Beheerder</span>' : '') + '</span><span class="lact">' +
+        (me ? '<span class="note">Jij</span>' :
+          '<button class="linkbtn' + (isAdm ? ' danger' : '') + '" data-act="setadmin" data-uid="' + esc(u) + '" data-v="' + (isAdm ? '0' : '1') + '" data-fk="ad:' + esc(p.id) + '">' +
+          (isAdm ? 'Beheer weghalen' : 'Maak beheerder') + '</button>') + '</span></div></li>';
+    }).join('') || '<li><span class="note">Nog niemand heeft zijn naam gekozen.</span></li>';
+    $('claimlist').innerHTML = PLAYERS.map(function (p) {
+      var u = claimUid(p.id);
+      var ask = state.confirmDel === p.id;
+      return '<li><div class="lrow"><span class="lname">' + esc(p.name) + (p.role ? '<span class="badge">' + p.role + '</span>' : '') +
+        '<span class="sdot' + (u ? ' ok' : '') + '" role="img" aria-label="' + (u ? 'naam gekozen' : 'nog niet gekozen') + '"></span></span><span class="lact"><span class="slot">' +
+        (u ? '<button class="linkbtn" data-act="unclaim" data-uid="' + esc(u) + '" data-fk="uc:' + p.id + '">Maak los</button>' : '') + '</span><span>' +
+        (ask ? '' : '<button class="linkbtn danger" data-act="del-ask" data-pid="' + p.id + '" data-fk="da:' + p.id + '">Verwijder</button>') +
+        '</span></div>' +
+        (ask ? '<div class="confirm"><span>' + esc(p.short) + ' en alle antwoorden van die speler verwijderen?</span>' +
+          '<button class="btn small danger" data-act="del-yes" data-pid="' + p.id + '" data-fk="dy:' + p.id + '">Ja, verwijder</button>' +
+          '<button class="linkbtn" data-act="del-cancel" data-fk="dc:' + p.id + '">Annuleer</button></div>' : '') + '</li>';
+    }).join('');
+  }
+
+  function renderMatchAdmin() {
+    var ms = state.matches.slice().sort(byStart);
+    $('mdsum').textContent = 'Alle wedstrijden (' + ms.length + ')';
+    $('matchlist').innerHTML = ms.map(function (m) {
+      var d = new Date(m.start), ask = state.confirmMatch === m.id;
+      var label = cap(clean(fWd.format(d))) + ' ' + fDay.format(d) + ' ' + clean(fMon.format(d)) + ' ' + fTime.format(d) + ' · ' + (m.opp || 'Tegenstander nog niet bekend');
+      return '<li><div class="lrow"><span>' + esc(label) + '</span><span class="lact">' +
+        '<button class="linkbtn" data-act="match-edit" data-mid="' + esc(m.id) + '" data-fk="me:' + esc(m.id) + '">Wijzig</button>' +
+        (ask ? '' : '<button class="linkbtn danger" data-act="match-del-ask" data-mid="' + esc(m.id) + '" data-fk="md:' + esc(m.id) + '">Verwijder</button>') +
+        '</span></div>' +
+        (ask ? '<div class="confirm"><span>Deze wedstrijd en alle antwoorden daarvoor verwijderen?</span>' +
+          '<button class="btn small danger" data-act="match-del-yes" data-mid="' + esc(m.id) + '" data-fk="my:' + esc(m.id) + '">Ja, verwijder</button>' +
+          '<button class="linkbtn" data-act="match-del-cancel" data-fk="mc:' + esc(m.id) + '">Annuleer</button></div>' : '') + '</li>';
+    }).join('');
+    $('seasonbox').innerHTML = state.seasonAsk === 2
+      ? '<div class="confirm"><span><strong>Laatste kans:</strong> weet je echt zeker dat je alle ' + ms.length + ' wedstrijden en alle antwoorden wilt wissen? Dit kan niet worden teruggedraaid.</span>' +
+        '<button class="btn small danger" data-act="season-yes" data-fk="season-yes">Ja, wis alles definitief</button>' +
+        '<button class="linkbtn" data-act="season-cancel" data-fk="season-cancel">Nee, annuleer</button></div>'
+      : state.seasonAsk
+      ? '<div class="confirm"><span>Alle ' + ms.length + ' wedstrijden en alle antwoorden worden verwijderd. Dit kan niet ongedaan worden gemaakt.</span>' +
+        '<button class="btn small danger" data-act="season-next" data-fk="season-next">Ja, ga verder</button>' +
+        '<button class="linkbtn" data-act="season-cancel" data-fk="season-cancel">Annuleer</button></div>'
+      : '<button class="btn danger" data-act="season-ask" data-fk="season-ask">Seizoen afsluiten en wissen</button>';
+  }
+
+  function toLocalInput(iso) {
+    return new Intl.DateTimeFormat('sv-SE', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      .format(new Date(iso)).replace(' ', 'T');
+  }
+  function fromLocalInput(v) {
+    var mt = /^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)/.exec(v || '');
+    if (!mt) return null;
+    var ms = Date.UTC(+mt[1], +mt[2] - 1, +mt[3], +mt[4], +mt[5]);
+    return new Date(ms - amsOffset(ms)).toISOString().replace('.000Z', 'Z');
+  }
+  function resetMatchForm() {
+    state.editMatch = null;
+    $('matchform').reset();
+    $('mflabel').textContent = 'Wedstrijd toevoegen';
+    $('msave').textContent = 'Wedstrijd toevoegen';
+    $('mcancel').hidden = true;
+  }
+  function editMatch(mid) {
+    var m = null;
+    state.matches.forEach(function (x) { if (x.id === mid) m = x; });
+    if (!m) return;
+    state.editMatch = mid;
+    $('mdate').value = toLocalInput(m.start);
+    $('mopp').value = m.opp || '';
+    $('mhome').value = m.home === true ? '1' : m.home === false ? '0' : '';
+    $('mloc').value = m.loc || '';
+    $('mflabel').textContent = 'Wedstrijd wijzigen';
+    $('msave').textContent = 'Wijziging opslaan';
+    $('mcancel').hidden = false;
+    $('matchform').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  function matchWhen(iso) {
+    var d = new Date(iso);
+    return cap(clean(fWd.format(d))) + ' ' + fDay.format(d) + ' ' + clean(fMon.format(d)) + ' ' + fTime.format(d);
+  }
+  /* ---------- berichten (belletje) ---------- */
+  var wantInbox = location.hash === '#berichten';
+  function myPlayerId() { var c = state.uid && state.claims[state.uid]; return c ? c.p : null; }
+  function inboxList() {
+    var me = myPlayerId();
+    return state.messages.filter(function (m) { return !state.hidden[m.id] && (!m.to_players || (me && m.to_players.indexOf(me) >= 0)); });
+  }
+  function unreadCount() { return inboxList().filter(function (m) { return !state.reads[m.id]; }).length; }
+  function renderInbox() {
+    var list = inboxList();
+    var TRASH = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>';
+    $('inboxlist').innerHTML = list.length ? list.map(function (m) {
+      return '<li class="mw" data-mid="' + esc(m.id) + '"><button type="button" class="mdel" data-del="' + esc(m.id) + '" aria-label="Verwijder bericht">' + TRASH + '</button>' +
+        '<div class="msg' + (state.fresh[m.id] ? ' new' : '') + '"><div class="mhead"><strong>' + esc(m.title) + '</strong><small>' + esc(matchWhen(m.created_at)) + '</small></div><p>' + esc(m.body) + '</p></div></li>';
+    }).join('') : '<li class="mw"><div class="msg empty">Je hebt geen berichten.</div></li>';
+  }
+  function renderBell() {
+    var on = !!state.uid && state.dbState === 'ok';
+    var n = on ? unreadCount() : 0;
+    $('bell').hidden = !on;
+    $('bellbadge').hidden = n === 0;
+    $('bellbadge').textContent = n > 9 ? '9+' : String(n);
+    $('bell').setAttribute('aria-label', n ? 'Berichten, ' + n + ' ongelezen' : 'Berichten');
+    if ($('inbox').open) renderInbox();
+  }
+  function loadMessages() {
+    if (!sb || !state.uid) return Promise.resolve();
+    function reads() {
+      return run(sb.from('message_reads').select('message_id,hidden')).catch(function () { return run(sb.from('message_reads').select('message_id')); });
+    }
+    return Promise.all([
+      run(sb.from('messages').select('*').order('created_at', { ascending: false }).limit(50)),
+      reads()
+    ]).then(function (r) {
+      var rd = {}, hd = {}; r[1].data.forEach(function (v) { rd[v.message_id] = true; if (v.hidden) hd[v.message_id] = true; });
+      state.messages = r[0].data; state.reads = rd; state.hidden = hd;
+      renderBell();
+      if (wantInbox) { wantInbox = false; history.replaceState(null, '', location.pathname + location.search); openInbox(); }
+    }).catch(function () {});
+  }
+  function openInbox() {
+    var unread = inboxList().filter(function (m) { return !state.reads[m.id]; });
+    state.fresh = {}; unread.forEach(function (m) { state.fresh[m.id] = true; });
+    renderInbox();
+    var d = $('inbox');
+    if (!d.open) { if (d.showModal) d.showModal(); else d.setAttribute('open', ''); }
+    if (unread.length) {
+      unread.forEach(function (m) { state.reads[m.id] = true; });
+      renderBell();
+      if (sb) run(sb.from('message_reads').upsert(unread.map(function (m) { return { message_id: m.id, user_id: state.uid }; }))).catch(function () {});
+    }
+  }
+  /* swipe naar links toont een prullenbak; tik erop om het bericht te verwijderen */
+  var swipe = null, OPEN = 88;
+  function closeSwipes(except) {
+    Array.prototype.forEach.call($('inboxlist').querySelectorAll('.msg.open'), function (el) {
+      if (el !== except) { el.classList.remove('open'); el.style.transform = ''; }
+    });
+  }
+  function endSwipe() {
+    if (!swipe) return;
+    var sw = swipe; swipe = null;
+    sw.el.classList.remove('dragging');
+    if (sw.dir !== 'h') return;
+    var open = sw.x < -OPEN / 2;
+    sw.el.classList.toggle('open', open);
+    sw.el.style.transform = '';
+  }
+  $('inboxlist').addEventListener('pointerdown', function (ev) {
+    var el = ev.target.closest('.msg');
+    if (!el || el.classList.contains('empty')) return;
+    closeSwipes(el);
+    swipe = { el: el, x0: ev.clientX, y0: ev.clientY, base: el.classList.contains('open') ? -OPEN : 0, x: el.classList.contains('open') ? -OPEN : 0, dir: null, id: ev.pointerId };
+  });
+  $('inboxlist').addEventListener('pointermove', function (ev) {
+    if (!swipe || ev.pointerId !== swipe.id) return;
+    var dx = ev.clientX - swipe.x0, dy = ev.clientY - swipe.y0;
+    if (!swipe.dir) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      swipe.dir = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+      if (swipe.dir === 'h') { swipe.el.classList.add('dragging'); swipe.el.classList.remove('open'); try { swipe.el.setPointerCapture(ev.pointerId); } catch (e) {} }
+    }
+    if (swipe.dir !== 'h') return;
+    swipe.x = Math.max(-OPEN - 24, Math.min(0, swipe.base + dx));
+    swipe.el.style.transform = 'translateX(' + swipe.x + 'px)';
+  });
+  $('inboxlist').addEventListener('pointerup', endSwipe);
+  $('inboxlist').addEventListener('pointercancel', endSwipe);
+  function hideMessage(id) {
+    state.hidden[id] = true; state.reads[id] = true;
+    var li = $('inboxlist').querySelector('[data-mid="' + id + '"]');
+    if (li) li.classList.add('gone');
+    setTimeout(function () { renderBell(); renderInbox(); }, 260);
+    if (sb) run(sb.from('message_reads').upsert({ message_id: id, user_id: state.uid, hidden: true })).catch(function () {});
+  }
+  $('inboxlist').addEventListener('click', function (ev) {
+    var b = ev.target.closest('.mdel');
+    if (b) hideMessage(b.getAttribute('data-del'));
+  });
+  $('bell').addEventListener('click', openInbox);
+  $('inboxclose').addEventListener('click', function () { $('inbox').close(); });
+  $('inbox').addEventListener('click', function (ev) { if (ev.target === $('inbox')) $('inbox').close(); });
+  if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', function (ev) {
+    if (ev.data && ev.data.type === 'open-inbox') { wantInbox = true; loadMessages(); }
+  });
+
+  function renderMsgTo() {
+    var valid = {}; PLAYERS.forEach(function (p) { valid[p.id] = 1; });
+    state.msgTo = state.msgTo.filter(function (id) { return valid[id]; });
+    var all = state.msgTo.length === 0;
+    $('msgto').innerHTML = '<button type="button" class="chip" data-act="msgto" data-pid="all" data-fk="mt:all" aria-pressed="' + all + '">Iedereen</button>' +
+      PLAYERS.map(function (p) {
+        return '<button type="button" class="chip" data-act="msgto" data-pid="' + esc(p.id) + '" data-fk="mt:' + esc(p.id) + '" aria-pressed="' + (state.msgTo.indexOf(p.id) >= 0) + '">' + esc(p.short || p.name) + '</button>';
+      }).join('');
+    var n = state.msgTo.length;
+    $('msgsend').textContent = n === 0 ? 'Verstuur naar iedereen' : n === 1 ? 'Verstuur naar ' + playerShort(state.msgTo[0]) : 'Verstuur naar ' + n + ' spelers';
+  }
+  function playerShort(id) { var r = id; PLAYERS.forEach(function (p) { if (p.id === id) r = p.short || p.name; }); return r; }
+  function toggleMsgTo(pid) {
+    if (pid === 'all') state.msgTo = [];
+    else {
+      var i = state.msgTo.indexOf(pid);
+      if (i >= 0) state.msgTo.splice(i, 1); else state.msgTo.push(pid);
+    }
+    renderMsgTo();
+  }
+  function sendToPlayers(title, body, ids) {
+    return sb.functions.invoke('send-to-players', { body: { title: title, body: body, player_ids: ids } }).then(function (r) {
+      if (r.error) throw r.error;
+      return r.data || {};
+    });
+  }
+  function sendMessage(title, body) {
+    return sb.functions.invoke('send-message', { body: { title: title, body: body } }).then(function (r) {
+      if (r.error) throw r.error;
+      return r.data || {};
+    });
+  }
+  function saveMatch() {
+    if (!sb || !state.isCaptain) return;
+    var start = fromLocalInput($('mdate').value);
+    if (!start) { toast('Kies een datum en tijd.'); return; }
+    var h = $('mhome').value;
+    var isNew = !state.editMatch;
+    var rec = { id: state.editMatch || ('m' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)), team_id: state.team.id, start: start,
+      opp: $('mopp').value.trim(), home: h === '' ? null : h === '1', loc: $('mloc').value.trim() };
+    var notify = $('mnotify').checked;
+    run(sb.from('matches').upsert(rec)).then(function () {
+      toast(isNew ? 'Wedstrijd toegevoegd.' : 'Wijziging opgeslagen.');
+      resetMatchForm(); $('mnotify').checked = false;
+      if (notify) {
+        var body = matchWhen(rec.start) + (rec.opp ? ' tegen ' + rec.opp : '') + (rec.home === true ? ' (thuis)' : rec.home === false ? ' (uit)' : '');
+        return sendMessage(isNew ? 'Nieuwe wedstrijd' : 'Wedstrijd gewijzigd', body).catch(function () { toast('Opgeslagen, maar de melding is niet verstuurd.'); });
+      }
+    }).then(loadAll).catch(writeFail);
+  }
+  function deleteMatch(mid) {
+    state.confirmMatch = null;
+    run(sb.from('answers').delete().eq('match_id', mid))
+      .then(function () { return run(sb.from('matches').delete().eq('id', mid)); })
+      .then(function () { toast('Wedstrijd verwijderd.'); return loadAll(); }).catch(writeFail);
+    render();
+  }
+  function resetSeason() {
+    state.seasonAsk = false; state.expanded = {}; resetMatchForm();
+    run(sb.from('answers').delete().neq('match_id', ''))
+      .then(function () { return run(sb.from('matches').delete().neq('id', '')); })
+      .then(function () { toast('Seizoen gewist. Importeer nu de nieuwe speelkalender.'); return loadAll(); }).catch(writeFail);
+    render();
+  }
+  $('matchform').addEventListener('submit', function (ev) { ev.preventDefault(); saveMatch(); });
+  $('msgform').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    if (!sb || !state.isCaptain) return;
+    var t = $('msgtitle').value.trim(), b = $('msgbody').value.trim();
+    if (!t || !b) return;
+    var ids = state.msgTo.slice();
+    if (ids.length) {
+      sendToPlayers(t, b, ids).then(function (r) {
+        var miss = (r.missing || []).map(playerShort);
+        if (!r.sent) toast((miss.length ? miss.join(', ') : 'Niemand') + ' heeft (nog) geen meldingen aanstaan. Er is niets verstuurd.');
+        else if (miss.length) toast('Verstuurd. ' + miss.join(', ') + ' heeft geen meldingen aanstaan.');
+        else toast('Melding verstuurd.');
+        $('msgform').reset(); state.msgTo = []; renderMsgTo();
+      }).catch(function () { toast('Melding versturen is niet gelukt.'); });
+      return;
+    }
+    sendMessage(t, b).then(function (r) {
+      toast(typeof r.sent === 'number' ? 'Melding verstuurd naar ' + r.sent + ' toestel(len).' : 'Melding verstuurd.');
+      $('msgform').reset();
+    }).catch(function () { toast('Melding versturen is niet gelukt.'); });
+  });
+
+  function seasonLabel() {
+    var ref = state.matches.length ? new Date(state.matches.slice().sort(byStart)[0].start) : new Date();
+    var y = +new Intl.DateTimeFormat('en-US', { year: 'numeric', timeZone: TZ }).format(ref);
+    var mo = +new Intl.DateTimeFormat('en-US', { month: 'numeric', timeZone: TZ }).format(ref);
+    return mo >= 7 ? y + '-' + (y + 1) : (y - 1) + '-' + y;
+  }
+
+  function render() {
+    var ae = document.activeElement, fk = ae && ae.dataset ? ae.dataset.fk : null;
+    $('season').textContent = state.team ? 'Wie gooit er mee? Seizoen ' + seasonLabel() : 'Voor darts-teams';
+    $('teamname').textContent = state.team ? state.team.name : 'Wie gooit er mee?';
+    document.title = state.team ? state.team.name : 'Wie gooit er mee?';
+    document.documentElement.classList.toggle('noteam', state.dbState === 'ok' && !state.team);
+    renderNote();
+    renderWho();
+    renderLists();
+    renderAdmin();
+    renderSuper();
+    renderBell();
+    if (state.isCaptain) renderMatchAdmin();
+    if (fk) {
+      var el = document.querySelector('[data-fk="' + fk + '"]');
+      if (el && el.focus) el.focus({ preventScroll: true });
+    }
+  }
+
+  /* ---------- clicks ---------- */
+  document.addEventListener('click', function (ev) {
+    var t = ev.target.closest ? ev.target.closest('[data-act]') : null;
+    if (!t) return;
+    var act = t.getAttribute('data-act');
+    if (act === 'claim') {
+      claim(t.getAttribute('data-pid'));
+    } else if (act === 'unclaim-self') {
+      unclaim(state.uid);
+    } else if (act === 't-join' || act === 't-cap') {
+      run(sb.rpc('reset_code', { p_team: t.getAttribute('data-tid'), p_which: act === 't-join' ? 'join' : 'captain' })).then(function () { toast('Nieuwe code gemaakt.'); loadTeams(); }).catch(rpcFail);
+    } else if (act === 't-rename') {
+      var tr = teamById(t.getAttribute('data-tid'));
+      var nn = tr && window.prompt('Nieuwe naam voor het team (komt in de koptekst):', tr.name);
+      if (nn && nn.trim() && nn.trim() !== tr.name) run(sb.rpc('set_team', { p_team: tr.id, p_name: nn.trim(), p_hue: null, p_min: null, p_active: null })).then(function () { toast('Naam gewijzigd.'); loadTeams(); }).catch(rpcFail);
+    } else if (act === 't-active') {
+      var tt = teamById(t.getAttribute('data-tid'));
+      run(sb.rpc('set_team', { p_team: tt.id, p_name: null, p_hue: null, p_min: null, p_active: t.getAttribute('data-v') === '1' })).then(loadTeams).catch(rpcFail);
+    } else if (act === 't-del') {
+      var td = teamById(t.getAttribute('data-tid'));
+      if (td && window.confirm('Team "' + td.name + '" en alle gegevens van dat team definitief verwijderen?')) run(sb.rpc('delete_team', { p_team: td.id })).then(function () { toast('Team verwijderd.'); loadTeams(); }).catch(rpcFail);
+    } else if (act === 'setadmin') {
+      setAdmin(t.getAttribute('data-uid'), t.getAttribute('data-v') === '1');
+    } else if (act === 'unclaim') {
+      unclaim(t.getAttribute('data-uid'));
+    } else if (act === 'del-ask') {
+      state.confirmDel = t.getAttribute('data-pid'); render();
+    } else if (act === 'del-cancel') {
+      state.confirmDel = null; render();
+    } else if (act === 'del-yes') {
+      removePlayer(t.getAttribute('data-pid'));
+    } else if (act === 'onlylow') {
+      state.onlyLow = !state.onlyLow; render();
+    } else if (act === 'toggle') {
+      var mid = t.getAttribute('data-mid');
+      var cur = state.expanded[mid];
+      if (cur === undefined) {
+        var up = split().up;
+        cur = up.length && up[0].id === mid;
+      }
+      state.expanded[mid] = !cur; render();
+    } else if (act === 'proxy') {
+      state.proxy = !state.proxy; render();
+    } else if (act === 'status') {
+      if (t.disabled) return;
+      var m2 = t.getAttribute('data-mid'), p2 = t.getAttribute('data-pid'), s = t.getAttribute('data-s');
+      var curS = statusOf(m2, p2);
+      if (curS === s) { if (s === 'yes') return; s = 'yes'; }
+      writeAnswer(m2, p2, s);
+    } else if (act === 'push') { enablePush();
+    } else if (act === 'logout') { sb.auth.signOut();
+    } else if (act === 'signup') { auth(true);
+    } else if (act === 'msgto') { toggleMsgTo(t.getAttribute('data-pid'));
+    } else if (act === 'testpush') {
+      sb.functions.invoke('send-reminders', { body: { test: true } }).then(function (r) { toast(r.error ? 'Testmelding mislukt.' : 'Testmelding verstuurd.'); });
+    } else if (act === 'match-edit') { editMatch(t.getAttribute('data-mid'));
+    } else if (act === 'match-cancel') { resetMatchForm();
+    } else if (act === 'match-del-ask') { state.confirmMatch = t.getAttribute('data-mid'); render();
+    } else if (act === 'match-del-cancel') { state.confirmMatch = null; render();
+    } else if (act === 'match-del-yes') { deleteMatch(t.getAttribute('data-mid'));
+    } else if (act === 'season-ask') { state.seasonAsk = true; render();
+    } else if (act === 'season-next') { state.seasonAsk = 2; render();
+    } else if (act === 'season-cancel') { state.seasonAsk = false; render();
+    } else if (act === 'season-yes') { resetSeason();
+    } else if (act === 'import-save') {
+      saveImport();
+    }
+  });
+
+  /* ---------- importing the dartbond .ics ---------- */
+  function unesc(v) {
+    return v.replace(/\\n/gi, ' ').replace(/\\([,;\\])/g, '$1')
+      .replace(/&#(\d+);/g, function (_, n) { return String.fromCharCode(+n); })
+      .replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  }
+  function amsOffset(ms) {
+    var parts = new Intl.DateTimeFormat('en-US', { timeZone: TZ, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      .formatToParts(new Date(ms)).reduce(function (o, x) { o[x.type] = x.value; return o; }, {});
+    return Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute, +parts.second) - ms;
+  }
+  function parseICS(text) {
+    var raw = text.replace(/\r\n/g, '\n').replace(/\n[ \t]/g, '');
+    var out = [];
+    raw.split('BEGIN:VEVENT').slice(1).forEach(function (blk) {
+      var body = blk.split('END:VEVENT')[0], f = {};
+      body.split('\n').forEach(function (line) {
+        var i = line.indexOf(':');
+        if (i < 1) return;
+        var k = line.slice(0, i).split(';')[0].toUpperCase();
+        if (!(k in f)) f[k] = unesc(line.slice(i + 1));
+      });
+      var mt = /^(\d{4})(\d\d)(\d\d)T(\d\d)(\d\d)(\d\d)(Z?)$/.exec((f.DTSTART || '').trim());
+      if (!mt || !f.UID) return;
+      var ms = Date.UTC(+mt[1], +mt[2] - 1, +mt[3], +mt[4], +mt[5], +mt[6]);
+      if (!mt[7]) ms -= amsOffset(ms);
+      var s = (f.SUMMARY || '').trim(), home = null, opp = s;
+      if (s.indexOf(TEAM) === 0) { home = true; opp = s.slice(TEAM.length); }
+      else if (s.length >= TEAM.length && s.lastIndexOf(TEAM) === s.length - TEAM.length) { home = false; opp = s.slice(0, s.length - TEAM.length); }
+      opp = opp.replace(/^[\s-]+|[\s-]+$/g, '');
+      var loc = (f.LOCATION || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean).join(', ');
+      if (!opp && !loc) home = null;
+      out.push({ id: state.team.id.slice(0, 8) + '-' + f.UID.split('@')[0].replace(/[^A-Za-z0-9_.~:+-]/g, ''), start: new Date(ms).toISOString().replace('.000Z', 'Z'), opp: opp, home: home, loc: loc });
+    });
+    return out.sort(byStart);
+  }
+  function same(a, b) { return a && a.start === b.start && a.opp === b.opp && a.home === b.home && a.loc === b.loc; }
+
+  $('icsfile').addEventListener('change', function (ev) {
+    var file = ev.target.files && ev.target.files[0];
+    var out = $('importout');
+    if (!file) return;
+    file.text().then(function (txt) {
+      var list = parseICS(txt);
+      if (!list.length) { out.textContent = 'In dit bestand staan geen wedstrijden.'; state.pending = null; return; }
+      var cur = {};
+      state.matches.forEach(function (m) { cur[m.id] = m; });
+      var fresh = 0, changed = 0;
+      list.forEach(function (m) { if (!cur[m.id]) fresh++; else if (!same(cur[m.id], m)) changed++; });
+      state.pending = list;
+      out.innerHTML = '<p><strong>' + list.length + ' wedstrijden gevonden:</strong> ' + fresh + ' nieuw, ' + changed + ' gewijzigd.</p>' +
+        (db ? '<button class="btn" data-act="import-save">Opslaan voor het team</button>' : '<p>Opslaan kan alleen in de gedeelde versie van deze pagina.</p>');
+    }).catch(function () { out.textContent = 'Het bestand kon niet worden gelezen.'; });
+  });
+
+  function saveImport() {
+    var list = state.pending, out = $('importout');
+    if (!list || !sb) return;
+    var cur = {};
+    state.matches.forEach(function (m) { cur[m.id] = m; });
+    var todo = list.filter(function (m) { return !same(cur[m.id], m); });
+    if (!todo.length) { out.textContent = 'Alles was al up-to-date.'; return; }
+    out.textContent = 'Opslaan...';
+    run(sb.from('matches').upsert(todo.map(function (m) { return { id: m.id, team_id: state.team.id, start: m.start, opp: m.opp, home: m.home, loc: m.loc }; })))
+      .then(function () { out.textContent = 'Klaar. ' + todo.length + ' wedstrijden bijgewerkt.'; state.pending = null; toast('Wedstrijden opgeslagen.'); return loadAll(); })
+      .catch(function (e) { out.textContent = 'Opslaan is mislukt.'; writeFail(e); });
+  }
+
+  /* ---------- Supabase: laden, inloggen, meldingen ---------- */
+  var rt = null, channel = null;
+  function applyTheme() {
+    var h = state.team && state.team.hue;
+    var root = document.documentElement;
+    if (h === null || h === undefined) {
+      root.removeAttribute('data-hue'); root.style.removeProperty('--h');
+      var l = '#15493A', d = '#0B4545';
+    } else {
+      root.setAttribute('data-hue', h); root.style.setProperty('--h', h);
+      l = 'hsl(' + h + ' 50% 22%)'; d = 'hsl(' + h + ' 55% 20%)';
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('meta[name="theme-color"]'), function (m) {
+      m.setAttribute('content', m.getAttribute('media') && /dark/.test(m.getAttribute('media')) ? d : l);
+    });
+  }
+  function resetTeamState() {
+    state.team = null; state.claims = {}; state.claimsReady = false; state.isCaptain = false; state.isSuper = false;
+    state.matches = []; state.answers = {}; state.codes = null; PLAYERS = []; TEAM = ''; MIN = 4;
+    applyTheme();
+  }
+  function loadAll() {
+    return Promise.all([run(sb.from('members').select('*')), run(sb.from('teams').select('*')), run(sb.from('super_admins').select('user_id'))]).then(function (r) {
+      var mine = r[0].data.filter(function (v) { return v.user_id === state.uid; })[0];
+      state.isSuper = r[2].data.length > 0;
+      if (!mine) {
+        resetTeamState(); state.isSuper = r[2].data.length > 0;
+        state.claimsReady = true; state.dbState = 'ok'; state.canWrite = true;
+        render(); if (state.isSuper) loadTeams();
+        return;
+      }
+      state.team = r[1].data.filter(function (t) { return t.id === mine.team_id; })[0] || null;
+      TEAM = state.team ? state.team.name : ''; MIN = state.team ? state.team.min_players : 4;
+      applyTheme();
+      var c = {};
+      r[0].data.forEach(function (v) { if (v.team_id === mine.team_id) c[v.user_id] = { p: v.player_id, a: !!v.is_admin }; });
+      state.claims = c; state.isCaptain = !!mine.is_admin; state.claimsReady = true;
+      var q = [run(sb.from('matches').select('*')), run(sb.from('players').select('*')), run(sb.from('answers').select('*'))];
+      if (state.isCaptain) q.push(run(sb.from('team_codes').select('*').eq('team_id', mine.team_id)));
+      return Promise.all(q).then(function (x) {
+        state.matches = x[0].data.map(function (v) { return { id: v.id, start: new Date(v.start).toISOString().replace('.000Z', 'Z'), opp: v.opp || '', home: v.home, loc: v.loc || '' }; }).sort(byStart);
+        var pl = x[1].data.map(function (v) { return { id: v.id, name: v.name, short: v.short || v.name.split(' ')[0], role: v.role || '', order: v.sort || 99 }; });
+        pl.sort(function (a, b) { return a.order - b.order; });
+        PLAYERS = pl;
+        var a = {};
+        x[2].data.forEach(function (v) { var k = 'p_' + v.player_id; (a[k] = a[k] || { st: {} }).st[v.match_id] = { s: v.status, t: Date.parse(v.updated_at) }; });
+        state.answers = a; state.dbState = 'ok'; state.canWrite = true;
+        state.codes = x[3] && x[3].data[0] ? x[3].data[0] : null;
+        render();
+        if (window.setInvite) window.setInvite(state.team, state.codes);
+        if (state.isSuper) loadTeams();
+        loadMessages();
+      });
+    }).catch(function () { state.dbState = 'error'; render(); });
+  }
+
+  /* ---------- aansluiten bij een team ---------- */
+  function joinTeam() {
+    var code = ($('joincode').value || '').trim();
+    if (!code) { toast('Vul de teamcode in.'); return; }
+    run(sb.rpc('join_team', { p_code: code })).then(function (r) {
+      try { localStorage.removeItem('joincode'); } catch (e) {}
+      toast(r.data && r.data.captain ? 'Je bent aangesloten als beheerder van het team.' : 'Je bent aangesloten bij het team.');
+      return loadAll();
+    }).catch(rpcFail);
+  }
+  document.addEventListener('submit', function (ev) { if (ev.target.id === 'joinform') { ev.preventDefault(); joinTeam(); } });
+  try {
+    var qp = new URLSearchParams(location.search).get('team');
+    if (qp) { localStorage.setItem('joincode', qp.trim().toUpperCase()); history.replaceState(null, '', location.pathname + location.hash); }
+  } catch (e) {}
+
+  /* ---------- teaminstellingen (beheerder van het team) ---------- */
+  document.addEventListener('submit', function (ev) {
+    if (ev.target.id !== 'teamform') return;
+    ev.preventDefault();
+    run(sb.rpc('update_team_settings', { p_name: $('tname').value, p_min: parseInt($('tmin').value, 10) }))
+      .then(function () { toast('Team bijgewerkt.'); return loadAll(); }).catch(rpcFail);
+  });
+  $('newcode').addEventListener('click', function () {
+    if (!state.team) return;
+    run(sb.rpc('reset_code', { p_team: state.team.id, p_which: 'join' })).then(function () { toast('Nieuwe teamcode gemaakt. De oude code werkt niet meer.'); return loadAll(); }).catch(rpcFail);
+  });
+
+  /* ---------- beheerder van de hele app: alle teams ---------- */
+  function baseUrl() { return location.origin + location.pathname.replace(/index\.html$/, ''); }
+  function hueColor(h) { return h === null || h === undefined ? '#15493A' : 'hsl(' + h + ' 50% 30%)'; }
+  function loadTeams() {
+    run(sb.rpc('admin_list_teams')).then(function (r) { state.teams = r.data || []; renderSuper(); }).catch(function () {});
+  }
+  function renderSuper() {
+    $('superbox').hidden = !state.isSuper;
+    if (!state.isSuper) return;
+    $('teamlist').innerHTML = (state.teams || []).map(function (t) {
+      return '<li class="teamitem' + (t.active ? '' : ' off') + '"><div class="th"><span class="huedot" style="width:18px;height:18px;background:' + hueColor(t.hue) + '"></span><strong class="tn">' + esc(t.name) + '</strong><span class="note">' + t.members + ' leden' + (t.active ? '' : ' · uit') + '</span></div>' +
+        '<div class="tcodes">Teamcode: <b>' + esc(t.join_code || '') + '</b>' + (t.captain_code ? '<br>Code voor beheerder: <b>' + esc(t.captain_code) + '</b>' : '<br>Beheerder is aangesloten') + '</div>' +
+        '<div class="tacts"><button class="linkbtn" data-act="t-rename" data-tid="' + t.id + '">Naam wijzigen</button>' +
+        '<button class="linkbtn" data-act="t-join" data-tid="' + t.id + '">Nieuwe teamcode</button>' +
+        '<button class="linkbtn" data-act="t-cap" data-tid="' + t.id + '">Nieuwe beheerderscode</button>' +
+        '<button class="linkbtn" data-act="t-active" data-tid="' + t.id + '" data-v="' + (t.active ? '0' : '1') + '">' + (t.active ? 'Zet uit' : 'Zet aan') + '</button>' +
+        '<button class="linkbtn danger" data-act="t-del" data-tid="' + t.id + '">Verwijder</button></div></li>';
+    }).join('') || '<li><span class="note">Nog geen teams.</span></li>';
+  }
+  function teamById(id) { return (state.teams || []).filter(function (t) { return t.id === id; })[0]; }
+  function showNewTeam(name, j, c) {
+    var link = baseUrl() + '?team=' + c;
+    var txt = 'Hoi! Je bent beheerder (captain) van ' + name + ' in de dartapp.\n\n1. Open deze link: ' + link + '\n2. Maak een account met je e-mailadres en een wachtwoord.\n3. Je wordt automatisch beheerder van ' + name + '. Kies daarna je eigen naam.\n4. Voeg je spelers toe en laad de wedstrijden in. Spelers sluiten aan met teamcode ' + j + ' (of met de QR-code in het beheerpaneel).';
+    $('newteamout').innerHTML = '<div class="codeout"><strong>' + esc(name) + ' is aangemaakt.</strong><span>Teamcode: <b>' + esc(j) + '</b> · Code voor beheerder: <b>' + esc(c) + '</b></span>' +
+      '<textarea id="newteamtxt" readonly></textarea><button class="btn small" type="button" id="newteamcopy">Tekst kopiëren</button></div>';
+    $('newteamtxt').value = txt;
+    $('newteamcopy').addEventListener('click', function () {
+      var b = this; function ok() { var o = b.textContent; b.textContent = 'Gekopieerd \u2713'; setTimeout(function () { b.textContent = o; }, 1800); }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, function () {}); else { $('newteamtxt').select(); try { document.execCommand('copy'); ok(); } catch (e) {} }
+    });
+  }
+  $('nthue').addEventListener('input', function () { $('nthuedot').style.background = hueColor(parseInt($('nthue').value, 10)); });
+  $('nthuedot').style.background = hueColor(210);
+  $('ntclassic').addEventListener('change', function () { $('nthue').disabled = $('ntclassic').checked; $('nthuedot').style.background = $('ntclassic').checked ? hueColor(null) : hueColor(parseInt($('nthue').value, 10)); });
+  document.addEventListener('submit', function (ev) {
+    if (ev.target.id !== 'newteam') return;
+    ev.preventDefault();
+    var name = $('ntname').value.trim();
+    var hue = $('ntclassic').checked ? -1 : parseInt($('nthue').value, 10);
+    run(sb.rpc('create_team', { p_name: name, p_hue: hue, p_min: parseInt($('ntmin').value, 10) || 4 })).then(function (r) {
+      showNewTeam(name, r.data.join_code, r.data.captain_code);
+      $('newteam').reset(); $('nthue').disabled = false; $('nthuedot').style.background = hueColor(210);
+      loadTeams();
+    }).catch(rpcFail);
+  });
+
+  function auth(isNew) {
+    var email = $('aemail').value.trim(), pw = $('apass').value;
+    if (!email || pw.length < 6) { toast('Vul je e-mailadres en een wachtwoord van minimaal 6 tekens in.'); return; }
+    var p = isNew ? sb.auth.signUp({ email: email, password: pw }) : sb.auth.signInWithPassword({ email: email, password: pw });
+    p.then(function (r) {
+      if (r.error) toast(isNew ? 'Account maken is niet gelukt: ' + r.error.message : 'E-mailadres of wachtwoord klopt niet.');
+      else if (isNew && !r.data.session) toast('Account gemaakt. Bevestig je e-mail en log daarna in.');
+    });
+  }
+  document.addEventListener('submit', function (ev) { if (ev.target.id === 'authform') { ev.preventDefault(); auth(false); } });
+  function urlB64(s) {
+    var p = '='.repeat((4 - s.length % 4) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/'));
+    return Uint8Array.from(b, function (ch) { return ch.charCodeAt(0); });
+  }
+  function checkPush() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); })
+      .then(function (sub) { state.push = !!sub; render(); }).catch(function () {});
+  }
+  function enablePush() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) { toast('Meldingen werken hier niet. Op iPhone: zet de app eerst op je beginscherm en open hem daarvandaan.'); return; }
+    Notification.requestPermission().then(function (perm) {
+      if (perm !== 'granted') { toast('Meldingen zijn niet toegestaan. Zet ze aan in de instellingen van je telefoon of browser.'); return; }
+      return navigator.serviceWorker.ready.then(function (reg) {
+        return reg.pushManager.getSubscription().then(function (s) { return s || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64(CFG.VAPID_PUBLIC_KEY) }); });
+      }).then(function (sub) {
+        var j = sub.toJSON();
+        return run(sb.from('push_subscriptions').upsert({ endpoint: j.endpoint, user_id: state.uid, p256dh: j.keys.p256dh, auth: j.keys.auth }, { onConflict: 'endpoint' }));
+      }).then(function () { state.push = true; toast('Meldingen staan aan.'); render(); });
+    }).catch(function () { toast('Meldingen aanzetten is niet gelukt.'); });
+  }
+
+  var CFG = window.APP_CONFIG || {};
+  render();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+  if (!CFG.SUPABASE_URL || /JOUW/.test(CFG.SUPABASE_URL)) { state.dbState = 'none'; render(); }
+  else {
+    sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
+    db = sb; state.dbState = 'none';
+    sb.auth.onAuthStateChange(function (ev, session) {
+      var id = session ? session.user.id : null;
+      if (id && id === state.uid) return;
+      state.uid = id;
+      if (id) {
+        state.dbState = 'pending'; render();
+        setTimeout(function () { loadAll(); checkPush(); }, 0);
+        if (!channel) channel = sb.channel('alles').on('postgres_changes', { event: '*', schema: 'public' }, function () { clearTimeout(rt); rt = setTimeout(loadAll, 300); }).subscribe();
+      } else { state.dbState = 'none'; resetTeamState(); render(); }
+    });
+    document.addEventListener('visibilitychange', function () { if (!document.hidden && state.uid) loadAll(); });
+  }
+})();
+</script>
+
+<script>
+/* QR-code bibliotheek (MIT, Kazuhiko Arase) */
+var QRLib=(function(){var M={},C={};function R(n){n=n.replace("./","");if(C[n])return C[n].exports;var m=C[n]={exports:{}};M[n](m,m.exports,R);return m.exports;}
+M["QR8bitByte"]=function(module,exports,require){
+var QRMode = require('./QRMode');
+
+function QR8bitByte(data) {
+	this.mode = QRMode.MODE_8BIT_BYTE;
+	this.data = data;
+}
+
+QR8bitByte.prototype = {
+
+	getLength : function() {
+		return this.data.length;
+	},
+	
+	write : function(buffer) {
+		for (var i = 0; i < this.data.length; i++) {
+			buffer.put(this.data.charCodeAt(i), 8);
+		}
+	}
+};
+
+module.exports = QR8bitByte;
+
+};
+M["QRBitBuffer"]=function(module,exports,require){
+function QRBitBuffer() {
+	this.buffer = [];
+	this.length = 0;
+}
+
+QRBitBuffer.prototype = {
+
+	get : function(index) {
+		var bufIndex = Math.floor(index / 8);
+		return ( (this.buffer[bufIndex] >>> (7 - index % 8) ) & 1) == 1;
+	},
+	
+	put : function(num, length) {
+		for (var i = 0; i < length; i++) {
+			this.putBit( ( (num >>> (length - i - 1) ) & 1) == 1);
+		}
+	},
+	
+	getLengthInBits : function() {
+		return this.length;
+	},
+	
+	putBit : function(bit) {
+	
+		var bufIndex = Math.floor(this.length / 8);
+		if (this.buffer.length <= bufIndex) {
+			this.buffer.push(0);
+		}
+	
+		if (bit) {
+			this.buffer[bufIndex] |= (0x80 >>> (this.length % 8) );
+		}
+	
+		this.length++;
+	}
+};
+
+module.exports = QRBitBuffer;
+
+};
+M["QRErrorCorrectLevel"]=function(module,exports,require){
+module.exports = {
+	L : 1,
+	M : 0,
+	Q : 3,
+	H : 2
+};
+
+
+};
+M["QRMaskPattern"]=function(module,exports,require){
+module.exports = {
+	PATTERN000 : 0,
+	PATTERN001 : 1,
+	PATTERN010 : 2,
+	PATTERN011 : 3,
+	PATTERN100 : 4,
+	PATTERN101 : 5,
+	PATTERN110 : 6,
+	PATTERN111 : 7
+};
+
+};
+M["QRMath"]=function(module,exports,require){
+var QRMath = {
+
+	glog : function(n) {
+	
+		if (n < 1) {
+			throw new Error("glog(" + n + ")");
+		}
+		
+		return QRMath.LOG_TABLE[n];
+	},
+	
+	gexp : function(n) {
+	
+		while (n < 0) {
+			n += 255;
+		}
+	
+		while (n >= 256) {
+			n -= 255;
+		}
+	
+		return QRMath.EXP_TABLE[n];
+	},
+	
+	EXP_TABLE : new Array(256),
+	
+	LOG_TABLE : new Array(256)
+
+};
+	
+for (var i = 0; i < 8; i++) {
+	QRMath.EXP_TABLE[i] = 1 << i;
+}
+for (var i = 8; i < 256; i++) {
+	QRMath.EXP_TABLE[i] = QRMath.EXP_TABLE[i - 4]
+		^ QRMath.EXP_TABLE[i - 5]
+		^ QRMath.EXP_TABLE[i - 6]
+		^ QRMath.EXP_TABLE[i - 8];
+}
+for (var i = 0; i < 255; i++) {
+	QRMath.LOG_TABLE[QRMath.EXP_TABLE[i] ] = i;
+}
+
+module.exports = QRMath;
+
+};
+M["QRMode"]=function(module,exports,require){
+module.exports = {
+    MODE_NUMBER :       1 << 0,
+    MODE_ALPHA_NUM :    1 << 1,
+    MODE_8BIT_BYTE :    1 << 2,
+    MODE_KANJI :        1 << 3
+};
+
+};
+M["QRPolynomial"]=function(module,exports,require){
+var QRMath = require('./QRMath');
+
+function QRPolynomial(num, shift) {
+	if (num.length === undefined) {
+		throw new Error(num.length + "/" + shift);
+	}
+
+	var offset = 0;
+
+	while (offset < num.length && num[offset] === 0) {
+		offset++;
+	}
+
+	this.num = new Array(num.length - offset + shift);
+	for (var i = 0; i < num.length - offset; i++) {
+		this.num[i] = num[i + offset];
+	}
+}
+
+QRPolynomial.prototype = {
+
+	get : function(index) {
+		return this.num[index];
+	},
+	
+	getLength : function() {
+		return this.num.length;
+	},
+	
+	multiply : function(e) {
+	
+		var num = new Array(this.getLength() + e.getLength() - 1);
+	
+		for (var i = 0; i < this.getLength(); i++) {
+			for (var j = 0; j < e.getLength(); j++) {
+				num[i + j] ^= QRMath.gexp(QRMath.glog(this.get(i) ) + QRMath.glog(e.get(j) ) );
+			}
+		}
+	
+		return new QRPolynomial(num, 0);
+	},
+	
+	mod : function(e) {
+	
+		if (this.getLength() - e.getLength() < 0) {
+			return this;
+		}
+	
+		var ratio = QRMath.glog(this.get(0) ) - QRMath.glog(e.get(0) );
+	
+		var num = new Array(this.getLength() );
+		
+		for (var i = 0; i < this.getLength(); i++) {
+			num[i] = this.get(i);
+		}
+		
+		for (var x = 0; x < e.getLength(); x++) {
+			num[x] ^= QRMath.gexp(QRMath.glog(e.get(x) ) + ratio);
+		}
+	
+		return new QRPolynomial(num, 0).mod(e);
+	}
+};
+
+module.exports = QRPolynomial;
+
+};
+M["QRRSBlock"]=function(module,exports,require){
+var QRErrorCorrectLevel = require('./QRErrorCorrectLevel');
+
+function QRRSBlock(totalCount, dataCount) {
+	this.totalCount = totalCount;
+	this.dataCount  = dataCount;
+}
+
+QRRSBlock.RS_BLOCK_TABLE = [
+
+
+	[1, 26, 19],
+	[1, 26, 16],
+	[1, 26, 13],
+	[1, 26, 9],
+	
+	[1, 44, 34],
+	[1, 44, 28],
+	[1, 44, 22],
+	[1, 44, 16],
+
+	[1, 70, 55],
+	[1, 70, 44],
+	[2, 35, 17],
+	[2, 35, 13],
+
+	[1, 100, 80],
+	[2, 50, 32],
+	[2, 50, 24],
+	[4, 25, 9],
+	
+	[1, 134, 108],
+	[2, 67, 43],
+	[2, 33, 15, 2, 34, 16],
+	[2, 33, 11, 2, 34, 12],
+	
+	[2, 86, 68],
+	[4, 43, 27],
+	[4, 43, 19],
+	[4, 43, 15],
+	
+	[2, 98, 78],
+	[4, 49, 31],
+	[2, 32, 14, 4, 33, 15],
+	[4, 39, 13, 1, 40, 14],
+	
+	[2, 121, 97],
+	[2, 60, 38, 2, 61, 39],
+	[4, 40, 18, 2, 41, 19],
+	[4, 40, 14, 2, 41, 15],
+	
+	[2, 146, 116],
+	[3, 58, 36, 2, 59, 37],
+	[4, 36, 16, 4, 37, 17],
+	[4, 36, 12, 4, 37, 13],
+	
+	[2, 86, 68, 2, 87, 69],
+	[4, 69, 43, 1, 70, 44],
+	[6, 43, 19, 2, 44, 20],
+	[6, 43, 15, 2, 44, 16],
+
+	[4, 101, 81],
+	[1, 80, 50, 4, 81, 51],
+	[4, 50, 22, 4, 51, 23],
+	[3, 36, 12, 8, 37, 13],
+
+	[2, 116, 92, 2, 117, 93],
+	[6, 58, 36, 2, 59, 37],
+	[4, 46, 20, 6, 47, 21],
+	[7, 42, 14, 4, 43, 15],
+
+	[4, 133, 107],
+	[8, 59, 37, 1, 60, 38],
+	[8, 44, 20, 4, 45, 21],
+	[12, 33, 11, 4, 34, 12],
+
+	[3, 145, 115, 1, 146, 116],
+	[4, 64, 40, 5, 65, 41],
+	[11, 36, 16, 5, 37, 17],
+	[11, 36, 12, 5, 37, 13],
+
+	[5, 109, 87, 1, 110, 88],
+	[5, 65, 41, 5, 66, 42],
+	[5, 54, 24, 7, 55, 25],
+	[11, 36, 12],
+
+	[5, 122, 98, 1, 123, 99],
+	[7, 73, 45, 3, 74, 46],
+	[15, 43, 19, 2, 44, 20],
+	[3, 45, 15, 13, 46, 16],
+
+	[1, 135, 107, 5, 136, 108],
+	[10, 74, 46, 1, 75, 47],
+	[1, 50, 22, 15, 51, 23],
+	[2, 42, 14, 17, 43, 15],
+
+	[5, 150, 120, 1, 151, 121],
+	[9, 69, 43, 4, 70, 44],
+	[17, 50, 22, 1, 51, 23],
+	[2, 42, 14, 19, 43, 15],
+
+	[3, 141, 113, 4, 142, 114],
+	[3, 70, 44, 11, 71, 45],
+	[17, 47, 21, 4, 48, 22],
+	[9, 39, 13, 16, 40, 14],
+
+	[3, 135, 107, 5, 136, 108],
+	[3, 67, 41, 13, 68, 42],
+	[15, 54, 24, 5, 55, 25],
+	[15, 43, 15, 10, 44, 16],
+
+	[4, 144, 116, 4, 145, 117],
+	[17, 68, 42],
+	[17, 50, 22, 6, 51, 23],
+	[19, 46, 16, 6, 47, 17],
+
+	[2, 139, 111, 7, 140, 112],
+	[17, 74, 46],
+	[7, 54, 24, 16, 55, 25],
+	[34, 37, 13],
+
+	[4, 151, 121, 5, 152, 122],
+	[4, 75, 47, 14, 76, 48],
+	[11, 54, 24, 14, 55, 25],
+	[16, 45, 15, 14, 46, 16],
+
+	[6, 147, 117, 4, 148, 118],
+	[6, 73, 45, 14, 74, 46],
+	[11, 54, 24, 16, 55, 25],
+	[30, 46, 16, 2, 47, 17],
+
+	[8, 132, 106, 4, 133, 107],
+	[8, 75, 47, 13, 76, 48],
+	[7, 54, 24, 22, 55, 25],
+	[22, 45, 15, 13, 46, 16],
+
+	[10, 142, 114, 2, 143, 115],
+	[19, 74, 46, 4, 75, 47],
+	[28, 50, 22, 6, 51, 23],
+	[33, 46, 16, 4, 47, 17],
+
+	[8, 152, 122, 4, 153, 123],
+	[22, 73, 45, 3, 74, 46],
+	[8, 53, 23, 26, 54, 24],
+	[12, 45, 15, 28, 46, 16],
+
+	[3, 147, 117, 10, 148, 118],
+	[3, 73, 45, 23, 74, 46],
+	[4, 54, 24, 31, 55, 25],
+	[11, 45, 15, 31, 46, 16],
+
+	[7, 146, 116, 7, 147, 117],
+	[21, 73, 45, 7, 74, 46],
+	[1, 53, 23, 37, 54, 24],
+	[19, 45, 15, 26, 46, 16],
+
+	[5, 145, 115, 10, 146, 116],
+	[19, 75, 47, 10, 76, 48],
+	[15, 54, 24, 25, 55, 25],
+	[23, 45, 15, 25, 46, 16],
+
+	[13, 145, 115, 3, 146, 116],
+	[2, 74, 46, 29, 75, 47],
+	[42, 54, 24, 1, 55, 25],
+	[23, 45, 15, 28, 46, 16],
+
+	[17, 145, 115],
+	[10, 74, 46, 23, 75, 47],
+	[10, 54, 24, 35, 55, 25],
+	[19, 45, 15, 35, 46, 16],
+
+	[17, 145, 115, 1, 146, 116],
+	[14, 74, 46, 21, 75, 47],
+	[29, 54, 24, 19, 55, 25],
+	[11, 45, 15, 46, 46, 16],
+
+	[13, 145, 115, 6, 146, 116],
+	[14, 74, 46, 23, 75, 47],
+	[44, 54, 24, 7, 55, 25],
+	[59, 46, 16, 1, 47, 17],
+
+	[12, 151, 121, 7, 152, 122],
+	[12, 75, 47, 26, 76, 48],
+	[39, 54, 24, 14, 55, 25],
+	[22, 45, 15, 41, 46, 16],
+
+	[6, 151, 121, 14, 152, 122],
+	[6, 75, 47, 34, 76, 48],
+	[46, 54, 24, 10, 55, 25],
+	[2, 45, 15, 64, 46, 16],
+
+	[17, 152, 122, 4, 153, 123],
+	[29, 74, 46, 14, 75, 47],
+	[49, 54, 24, 10, 55, 25],
+	[24, 45, 15, 46, 46, 16],
+
+	[4, 152, 122, 18, 153, 123],
+	[13, 74, 46, 32, 75, 47],
+	[48, 54, 24, 14, 55, 25],
+	[42, 45, 15, 32, 46, 16],
+
+	[20, 147, 117, 4, 148, 118],
+	[40, 75, 47, 7, 76, 48],
+	[43, 54, 24, 22, 55, 25],
+	[10, 45, 15, 67, 46, 16],
+
+	[19, 148, 118, 6, 149, 119],
+	[18, 75, 47, 31, 76, 48],
+	[34, 54, 24, 34, 55, 25],
+	[20, 45, 15, 61, 46, 16]
+];
+
+QRRSBlock.getRSBlocks = function(typeNumber, errorCorrectLevel) {
+	
+	var rsBlock = QRRSBlock.getRsBlockTable(typeNumber, errorCorrectLevel);
+	
+	if (rsBlock === undefined) {
+		throw new Error("bad rs block @ typeNumber:" + typeNumber + "/errorCorrectLevel:" + errorCorrectLevel);
+	}
+
+	var length = rsBlock.length / 3;
+	
+	var list = [];
+	
+	for (var i = 0; i < length; i++) {
+
+		var count = rsBlock[i * 3 + 0];
+		var totalCount = rsBlock[i * 3 + 1];
+		var dataCount  = rsBlock[i * 3 + 2];
+
+		for (var j = 0; j < count; j++) {
+			list.push(new QRRSBlock(totalCount, dataCount) );	
+		}
+	}
+	
+	return list;
+};
+
+QRRSBlock.getRsBlockTable = function(typeNumber, errorCorrectLevel) {
+
+	switch(errorCorrectLevel) {
+	case QRErrorCorrectLevel.L :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+	case QRErrorCorrectLevel.M :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+	case QRErrorCorrectLevel.Q :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+	case QRErrorCorrectLevel.H :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+	default :
+		return undefined;
+	}
+};
+
+module.exports = QRRSBlock;
+
+};
+M["QRUtil"]=function(module,exports,require){
+var QRMode = require('./QRMode');
+var QRPolynomial = require('./QRPolynomial');
+var QRMath = require('./QRMath');
+var QRMaskPattern = require('./QRMaskPattern');
+
+var QRUtil = {
+
+    PATTERN_POSITION_TABLE : [
+        [],
+        [6, 18],
+        [6, 22],
+        [6, 26],
+        [6, 30],
+        [6, 34],
+        [6, 22, 38],
+        [6, 24, 42],
+        [6, 26, 46],
+        [6, 28, 50],
+        [6, 30, 54],        
+        [6, 32, 58],
+        [6, 34, 62],
+        [6, 26, 46, 66],
+        [6, 26, 48, 70],
+        [6, 26, 50, 74],
+        [6, 30, 54, 78],
+        [6, 30, 56, 82],
+        [6, 30, 58, 86],
+        [6, 34, 62, 90],
+        [6, 28, 50, 72, 94],
+        [6, 26, 50, 74, 98],
+        [6, 30, 54, 78, 102],
+        [6, 28, 54, 80, 106],
+        [6, 32, 58, 84, 110],
+        [6, 30, 58, 86, 114],
+        [6, 34, 62, 90, 118],
+        [6, 26, 50, 74, 98, 122],
+        [6, 30, 54, 78, 102, 126],
+        [6, 26, 52, 78, 104, 130],
+        [6, 30, 56, 82, 108, 134],
+        [6, 34, 60, 86, 112, 138],
+        [6, 30, 58, 86, 114, 142],
+        [6, 34, 62, 90, 118, 146],
+        [6, 30, 54, 78, 102, 126, 150],
+        [6, 24, 50, 76, 102, 128, 154],
+        [6, 28, 54, 80, 106, 132, 158],
+        [6, 32, 58, 84, 110, 136, 162],
+        [6, 26, 54, 82, 110, 138, 166],
+        [6, 30, 58, 86, 114, 142, 170]
+    ],
+
+    G15 : (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0),
+    G18 : (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0),
+    G15_MASK : (1 << 14) | (1 << 12) | (1 << 10)    | (1 << 4) | (1 << 1),
+
+    getBCHTypeInfo : function(data) {
+        var d = data << 10;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) >= 0) {
+            d ^= (QRUtil.G15 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) ) );    
+        }
+        return ( (data << 10) | d) ^ QRUtil.G15_MASK;
+    },
+
+    getBCHTypeNumber : function(data) {
+        var d = data << 12;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) >= 0) {
+            d ^= (QRUtil.G18 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) ) );    
+        }
+        return (data << 12) | d;
+    },
+
+    getBCHDigit : function(data) {
+
+        var digit = 0;
+
+        while (data !== 0) {
+            digit++;
+            data >>>= 1;
+        }
+
+        return digit;
+    },
+
+    getPatternPosition : function(typeNumber) {
+        return QRUtil.PATTERN_POSITION_TABLE[typeNumber - 1];
+    },
+
+    getMask : function(maskPattern, i, j) {
+        
+        switch (maskPattern) {
+            
+        case QRMaskPattern.PATTERN000 : return (i + j) % 2 === 0;
+        case QRMaskPattern.PATTERN001 : return i % 2 === 0;
+        case QRMaskPattern.PATTERN010 : return j % 3 === 0;
+        case QRMaskPattern.PATTERN011 : return (i + j) % 3 === 0;
+        case QRMaskPattern.PATTERN100 : return (Math.floor(i / 2) + Math.floor(j / 3) ) % 2 === 0;
+        case QRMaskPattern.PATTERN101 : return (i * j) % 2 + (i * j) % 3 === 0;
+        case QRMaskPattern.PATTERN110 : return ( (i * j) % 2 + (i * j) % 3) % 2 === 0;
+        case QRMaskPattern.PATTERN111 : return ( (i * j) % 3 + (i + j) % 2) % 2 === 0;
+
+        default :
+            throw new Error("bad maskPattern:" + maskPattern);
+        }
+    },
+
+    getErrorCorrectPolynomial : function(errorCorrectLength) {
+
+        var a = new QRPolynomial([1], 0);
+
+        for (var i = 0; i < errorCorrectLength; i++) {
+            a = a.multiply(new QRPolynomial([1, QRMath.gexp(i)], 0) );
+        }
+
+        return a;
+    },
+
+    getLengthInBits : function(mode, type) {
+
+        if (1 <= type && type < 10) {
+
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 10;
+            case QRMode.MODE_ALPHA_NUM  : return 9;
+            case QRMode.MODE_8BIT_BYTE  : return 8;
+            case QRMode.MODE_KANJI      : return 8;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 27) {
+
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 12;
+            case QRMode.MODE_ALPHA_NUM  : return 11;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 10;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 41) {
+
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 14;
+            case QRMode.MODE_ALPHA_NUM  : return 13;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 12;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else {
+            throw new Error("type:" + type);
+        }
+    },
+
+    getLostPoint : function(qrCode) {
+        
+        var moduleCount = qrCode.getModuleCount();
+        var lostPoint = 0;
+        var row = 0; 
+        var col = 0;
+
+        
+        
+        for (row = 0; row < moduleCount; row++) {
+
+            for (col = 0; col < moduleCount; col++) {
+
+                var sameCount = 0;
+                var dark = qrCode.isDark(row, col);
+
+                for (var r = -1; r <= 1; r++) {
+
+                    if (row + r < 0 || moduleCount <= row + r) {
+                        continue;
+                    }
+
+                    for (var c = -1; c <= 1; c++) {
+
+                        if (col + c < 0 || moduleCount <= col + c) {
+                            continue;
+                        }
+
+                        if (r === 0 && c === 0) {
+                            continue;
+                        }
+
+                        if (dark === qrCode.isDark(row + r, col + c) ) {
+                            sameCount++;
+                        }
+                    }
+                }
+
+                if (sameCount > 5) {
+                    lostPoint += (3 + sameCount - 5);
+                }
+            }
+        }
+
+
+        for (row = 0; row < moduleCount - 1; row++) {
+            for (col = 0; col < moduleCount - 1; col++) {
+                var count = 0;
+                if (qrCode.isDark(row,     col    ) ) count++;
+                if (qrCode.isDark(row + 1, col    ) ) count++;
+                if (qrCode.isDark(row,     col + 1) ) count++;
+                if (qrCode.isDark(row + 1, col + 1) ) count++;
+                if (count === 0 || count === 4) {
+                    lostPoint += 3;
+                }
+            }
+        }
+
+
+        for (row = 0; row < moduleCount; row++) {
+            for (col = 0; col < moduleCount - 6; col++) {
+                if (qrCode.isDark(row, col) && 
+                        !qrCode.isDark(row, col + 1) && 
+                         qrCode.isDark(row, col + 2) && 
+                         qrCode.isDark(row, col + 3) && 
+                         qrCode.isDark(row, col + 4) && 
+                        !qrCode.isDark(row, col + 5) && 
+                         qrCode.isDark(row, col + 6) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount - 6; row++) {
+                if (qrCode.isDark(row, col) &&
+                        !qrCode.isDark(row + 1, col) &&
+                         qrCode.isDark(row + 2, col) &&
+                         qrCode.isDark(row + 3, col) &&
+                         qrCode.isDark(row + 4, col) &&
+                        !qrCode.isDark(row + 5, col) &&
+                         qrCode.isDark(row + 6, col) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        
+        var darkCount = 0;
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount; row++) {
+                if (qrCode.isDark(row, col) ) {
+                    darkCount++;
+                }
+            }
+        }
+        
+        var ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+        lostPoint += ratio * 10;
+
+        return lostPoint;       
+    }
+
+};
+
+module.exports = QRUtil;
+
+};
+M["index"]=function(module,exports,require){
+
+var QR8bitByte = require('./QR8bitByte');
+var QRUtil = require('./QRUtil');
+var QRPolynomial = require('./QRPolynomial');
+var QRRSBlock = require('./QRRSBlock');
+var QRBitBuffer = require('./QRBitBuffer');
+
+function QRCode(typeNumber, errorCorrectLevel) {
+	this.typeNumber = typeNumber;
+	this.errorCorrectLevel = errorCorrectLevel;
+	this.modules = null;
+	this.moduleCount = 0;
+	this.dataCache = null;
+	this.dataList = [];
+}
+
+QRCode.prototype = {
+	
+	addData : function(data) {
+		var newData = new QR8bitByte(data);
+		this.dataList.push(newData);
+		this.dataCache = null;
+	},
+	
+	isDark : function(row, col) {
+		if (row < 0 || this.moduleCount <= row || col < 0 || this.moduleCount <= col) {
+			throw new Error(row + "," + col);
+		}
+		return this.modules[row][col];
+	},
+
+	getModuleCount : function() {
+		return this.moduleCount;
+	},
+	
+	make : function() {
+		if (this.typeNumber < 1 ){
+			var typeNumber = 1;
+			for (typeNumber = 1; typeNumber < 40; typeNumber++) {
+				var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, this.errorCorrectLevel);
+
+				var buffer = new QRBitBuffer();
+				var totalDataCount = 0;
+				for (var i = 0; i < rsBlocks.length; i++) {
+					totalDataCount += rsBlocks[i].dataCount;
+				}
+
+				for (var x = 0; x < this.dataList.length; x++) {
+					var data = this.dataList[x];
+					buffer.put(data.mode, 4);
+					buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+					data.write(buffer);
+				}
+				if (buffer.getLengthInBits() <= totalDataCount * 8)
+					break;
+			}
+			this.typeNumber = typeNumber;
+		}
+		this.makeImpl(false, this.getBestMaskPattern() );
+	},
+	
+	makeImpl : function(test, maskPattern) {
+		
+		this.moduleCount = this.typeNumber * 4 + 17;
+		this.modules = new Array(this.moduleCount);
+		
+		for (var row = 0; row < this.moduleCount; row++) {
+			
+			this.modules[row] = new Array(this.moduleCount);
+			
+			for (var col = 0; col < this.moduleCount; col++) {
+				this.modules[row][col] = null;//(col + row) % 3;
+			}
+		}
+	
+		this.setupPositionProbePattern(0, 0);
+		this.setupPositionProbePattern(this.moduleCount - 7, 0);
+		this.setupPositionProbePattern(0, this.moduleCount - 7);
+		this.setupPositionAdjustPattern();
+		this.setupTimingPattern();
+		this.setupTypeInfo(test, maskPattern);
+		
+		if (this.typeNumber >= 7) {
+			this.setupTypeNumber(test);
+		}
+	
+		if (this.dataCache === null) {
+			this.dataCache = QRCode.createData(this.typeNumber, this.errorCorrectLevel, this.dataList);
+		}
+	
+		this.mapData(this.dataCache, maskPattern);
+	},
+
+	setupPositionProbePattern : function(row, col)  {
+		
+		for (var r = -1; r <= 7; r++) {
+			
+			if (row + r <= -1 || this.moduleCount <= row + r) continue;
+			
+			for (var c = -1; c <= 7; c++) {
+				
+				if (col + c <= -1 || this.moduleCount <= col + c) continue;
+				
+				if ( (0 <= r && r <= 6 && (c === 0 || c === 6) ) || 
+                     (0 <= c && c <= 6 && (r === 0 || r === 6) ) || 
+                     (2 <= r && r <= 4 && 2 <= c && c <= 4) ) {
+					this.modules[row + r][col + c] = true;
+				} else {
+					this.modules[row + r][col + c] = false;
+				}
+			}		
+		}		
+	},
+	
+	getBestMaskPattern : function() {
+	
+		var minLostPoint = 0;
+		var pattern = 0;
+	
+		for (var i = 0; i < 8; i++) {
+			
+			this.makeImpl(true, i);
+	
+			var lostPoint = QRUtil.getLostPoint(this);
+	
+			if (i === 0 || minLostPoint >  lostPoint) {
+				minLostPoint = lostPoint;
+				pattern = i;
+			}
+		}
+	
+		return pattern;
+	},
+	
+	createMovieClip : function(target_mc, instance_name, depth) {
+	
+		var qr_mc = target_mc.createEmptyMovieClip(instance_name, depth);
+		var cs = 1;
+	
+		this.make();
+
+		for (var row = 0; row < this.modules.length; row++) {
+			
+			var y = row * cs;
+			
+			for (var col = 0; col < this.modules[row].length; col++) {
+	
+				var x = col * cs;
+				var dark = this.modules[row][col];
+			
+				if (dark) {
+					qr_mc.beginFill(0, 100);
+					qr_mc.moveTo(x, y);
+					qr_mc.lineTo(x + cs, y);
+					qr_mc.lineTo(x + cs, y + cs);
+					qr_mc.lineTo(x, y + cs);
+					qr_mc.endFill();
+				}
+			}
+		}
+		
+		return qr_mc;
+	},
+
+	setupTimingPattern : function() {
+		
+		for (var r = 8; r < this.moduleCount - 8; r++) {
+			if (this.modules[r][6] !== null) {
+				continue;
+			}
+			this.modules[r][6] = (r % 2 === 0);
+		}
+	
+		for (var c = 8; c < this.moduleCount - 8; c++) {
+			if (this.modules[6][c] !== null) {
+				continue;
+			}
+			this.modules[6][c] = (c % 2 === 0);
+		}
+	},
+	
+	setupPositionAdjustPattern : function() {
+	
+		var pos = QRUtil.getPatternPosition(this.typeNumber);
+		
+		for (var i = 0; i < pos.length; i++) {
+		
+			for (var j = 0; j < pos.length; j++) {
+			
+				var row = pos[i];
+				var col = pos[j];
+				
+				if (this.modules[row][col] !== null) {
+					continue;
+				}
+				
+				for (var r = -2; r <= 2; r++) {
+				
+					for (var c = -2; c <= 2; c++) {
+					
+						if (Math.abs(r) === 2 || 
+                            Math.abs(c) === 2 ||
+                            (r === 0 && c === 0) ) {
+							this.modules[row + r][col + c] = true;
+						} else {
+							this.modules[row + r][col + c] = false;
+						}
+					}
+				}
+			}
+		}
+	},
+	
+	setupTypeNumber : function(test) {
+	
+		var bits = QRUtil.getBCHTypeNumber(this.typeNumber);
+        var mod;
+	
+		for (var i = 0; i < 18; i++) {
+			mod = (!test && ( (bits >> i) & 1) === 1);
+			this.modules[Math.floor(i / 3)][i % 3 + this.moduleCount - 8 - 3] = mod;
+		}
+	
+		for (var x = 0; x < 18; x++) {
+			mod = (!test && ( (bits >> x) & 1) === 1);
+			this.modules[x % 3 + this.moduleCount - 8 - 3][Math.floor(x / 3)] = mod;
+		}
+	},
+	
+	setupTypeInfo : function(test, maskPattern) {
+	
+		var data = (this.errorCorrectLevel << 3) | maskPattern;
+		var bits = QRUtil.getBCHTypeInfo(data);
+        var mod;
+	
+		for (var v = 0; v < 15; v++) {
+	
+			mod = (!test && ( (bits >> v) & 1) === 1);
+	
+			if (v < 6) {
+				this.modules[v][8] = mod;
+			} else if (v < 8) {
+				this.modules[v + 1][8] = mod;
+			} else {
+				this.modules[this.moduleCount - 15 + v][8] = mod;
+			}
+		}
+	
+		for (var h = 0; h < 15; h++) {
+	
+			mod = (!test && ( (bits >> h) & 1) === 1);
+			
+			if (h < 8) {
+				this.modules[8][this.moduleCount - h - 1] = mod;
+			} else if (h < 9) {
+				this.modules[8][15 - h - 1 + 1] = mod;
+			} else {
+				this.modules[8][15 - h - 1] = mod;
+			}
+		}
+	
+		this.modules[this.moduleCount - 8][8] = (!test);
+	
+	},
+	
+	mapData : function(data, maskPattern) {
+		
+		var inc = -1;
+		var row = this.moduleCount - 1;
+		var bitIndex = 7;
+		var byteIndex = 0;
+		
+		for (var col = this.moduleCount - 1; col > 0; col -= 2) {
+	
+			if (col === 6) col--;
+	
+			while (true) {
+	
+				for (var c = 0; c < 2; c++) {
+					
+					if (this.modules[row][col - c] === null) {
+						
+						var dark = false;
+	
+						if (byteIndex < data.length) {
+							dark = ( ( (data[byteIndex] >>> bitIndex) & 1) === 1);
+						}
+	
+						var mask = QRUtil.getMask(maskPattern, row, col - c);
+	
+						if (mask) {
+							dark = !dark;
+						}
+						
+						this.modules[row][col - c] = dark;
+						bitIndex--;
+	
+						if (bitIndex === -1) {
+							byteIndex++;
+							bitIndex = 7;
+						}
+					}
+				}
+								
+				row += inc;
+	
+				if (row < 0 || this.moduleCount <= row) {
+					row -= inc;
+					inc = -inc;
+					break;
+				}
+			}
+		}
+		
+	}
+
+};
+
+QRCode.PAD0 = 0xEC;
+QRCode.PAD1 = 0x11;
+
+QRCode.createData = function(typeNumber, errorCorrectLevel, dataList) {
+	
+	var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectLevel);
+	
+	var buffer = new QRBitBuffer();
+	
+	for (var i = 0; i < dataList.length; i++) {
+		var data = dataList[i];
+		buffer.put(data.mode, 4);
+		buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+		data.write(buffer);
+	}
+
+	var totalDataCount = 0;
+	for (var x = 0; x < rsBlocks.length; x++) {
+		totalDataCount += rsBlocks[x].dataCount;
+	}
+
+	if (buffer.getLengthInBits() > totalDataCount * 8) {
+		throw new Error("code length overflow. (" + 
+            buffer.getLengthInBits() + 
+            ">" +  
+            totalDataCount * 8 + 
+            ")");
+	}
+
+	if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+		buffer.put(0, 4);
+	}
+
+	while (buffer.getLengthInBits() % 8 !== 0) {
+		buffer.putBit(false);
+	}
+
+	while (true) {
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD0, 8);
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD1, 8);
+	}
+
+	return QRCode.createBytes(buffer, rsBlocks);
+};
+
+QRCode.createBytes = function(buffer, rsBlocks) {
+
+	var offset = 0;
+	
+	var maxDcCount = 0;
+	var maxEcCount = 0;
+	
+	var dcdata = new Array(rsBlocks.length);
+	var ecdata = new Array(rsBlocks.length);
+	
+	for (var r = 0; r < rsBlocks.length; r++) {
+
+		var dcCount = rsBlocks[r].dataCount;
+		var ecCount = rsBlocks[r].totalCount - dcCount;
+
+		maxDcCount = Math.max(maxDcCount, dcCount);
+		maxEcCount = Math.max(maxEcCount, ecCount);
+		
+		dcdata[r] = new Array(dcCount);
+		
+		for (var i = 0; i < dcdata[r].length; i++) {
+			dcdata[r][i] = 0xff & buffer.buffer[i + offset];
+		}
+		offset += dcCount;
+		
+		var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+		var rawPoly = new QRPolynomial(dcdata[r], rsPoly.getLength() - 1);
+
+		var modPoly = rawPoly.mod(rsPoly);
+		ecdata[r] = new Array(rsPoly.getLength() - 1);
+		for (var x = 0; x < ecdata[r].length; x++) {
+            var modIndex = x + modPoly.getLength() - ecdata[r].length;
+			ecdata[r][x] = (modIndex >= 0)? modPoly.get(modIndex) : 0;
+		}
+
+	}
+	
+	var totalCodeCount = 0;
+	for (var y = 0; y < rsBlocks.length; y++) {
+		totalCodeCount += rsBlocks[y].totalCount;
+	}
+
+	var data = new Array(totalCodeCount);
+	var index = 0;
+
+	for (var z = 0; z < maxDcCount; z++) {
+		for (var s = 0; s < rsBlocks.length; s++) {
+			if (z < dcdata[s].length) {
+				data[index++] = dcdata[s][z];
+			}
+		}
+	}
+
+	for (var xx = 0; xx < maxEcCount; xx++) {
+		for (var t = 0; t < rsBlocks.length; t++) {
+			if (xx < ecdata[t].length) {
+				data[index++] = ecdata[t][xx];
+			}
+		}
+	}
+
+	return data;
+
+};
+
+module.exports = QRCode;
+
+};
+return R("index");})();
+</script>
+<script>
+(function () {
+  'use strict';
+  var url = location.origin + location.pathname.replace(/index\.html$/, '');
+  var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var deferred = null;
+  function $(id) { return document.getElementById(id); }
+
+  /* ---------- QR ---------- */
+  function qrSvg(text) {
+    var q = new QRLib(-1, 0); /* niveau M */
+    q.addData(text); q.make();
+    var n = q.getModuleCount(), b = 4, d = '';
+    for (var r = 0; r < n; r++) {
+      var c = 0;
+      while (c < n) {
+        if (q.isDark(r, c)) {
+          var st = c; while (c < n && q.isDark(r, c)) c++;
+          d += 'M' + (st + b) + ' ' + (r + b) + 'h' + (c - st) + 'v1h-' + (c - st) + 'z';
+        } else c++;
+      }
+    }
+    var t = n + 2 * b;
+    return '<svg viewBox="0 0 ' + t + ' ' + t + '" shape-rendering="crispEdges" role="img" aria-label="QR-code naar de app"><rect width="' + t + '" height="' + t + '" fill="#fff"/><path d="' + d + '" fill="#000"/></svg>';
+  }
+  /* ---------- uitnodiging (per team) ---------- */
+  var msg = '', teamName = '';
+  window.setInvite = function (team, codes) {
+    if (!team || !codes) return;
+    teamName = team.name;
+    var link = url + '?team=' + codes.join_code;
+    try { $('qrbox').innerHTML = qrSvg(link); } catch (e) { $('qrbox').textContent = link; }
+    $('inviteurl').innerHTML = 'Teamcode: <strong>' + codes.join_code + '</strong>';
+    msg = "Hoi! Je bent uitgenodigd voor de dartapp van " + team.name + ". Daar geef je door of je erbij bent.\n\n" +
+      "1. Open deze link:\n" + link + "\n\n" +
+      "2. Installeer de app op je telefoon:\n" +
+      "- Android (Chrome): tik op \"App installeren\" in de app, of op de drie puntjes en dan \"App installeren\".\n" +
+      "- iPhone (Safari): tik op het deel-icoon en dan \"Zet op beginscherm\".\n\n" +
+      "3. Maak een account met je e-mailadres en een wachtwoord. De teamcode " + codes.join_code + " staat al ingevuld. Kies daarna je eigen naam.\n\n" +
+      "4. Tik op \"Meldingen aanzetten\". Dan krijg je een herinnering voor de wedstrijd en ook de wijzigingen en berichten van de captain.";
+    $('invitetext').value = msg;
+  };
+  if (navigator.share) {
+    $('invshare').hidden = false;
+    $('invshare').addEventListener('click', function () {
+      if (msg) navigator.share({ title: teamName || 'Wie gooit er mee?', text: msg }).catch(function () {});
+    });
+  }
+  $('invcopy').addEventListener('click', function () {
+    var b = this, ta = $('invitetext');
+    function ok() { var o = b.textContent; b.textContent = 'Gekopieerd \u2713'; setTimeout(function () { b.textContent = o; }, 1800); }
+    function fallback() { ta.focus(); ta.select(); try { document.execCommand('copy'); ok(); } catch (e) {} }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(msg).then(ok, fallback); else fallback();
+  });
+
+  /* ---------- installeren ---------- */
+  var bar = $('installbar'), btn = $('installbtn'), steps = $('installsteps');
+  function showBar() { if (!standalone) bar.hidden = false; }
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault(); deferred = e; steps.hidden = true; btn.textContent = 'App installeren'; showBar();
+  });
+  window.addEventListener('appinstalled', function () { deferred = null; bar.hidden = true; });
+  if (ios && !standalone) {
+    btn.textContent = 'Hoe?';
+    showBar();
+  }
+  btn.addEventListener('click', function () {
+    if (deferred) {
+      deferred.prompt();
+      deferred.userChoice.then(function () { deferred = null; bar.hidden = true; }, function () {});
+    } else {
+      bar.classList.add('col');
+      steps.textContent = ios
+        ? 'Tik onderin op het deel-icoon en kies "Zet op beginscherm".'
+        : 'Tik rechtsboven op de drie puntjes en kies "App installeren".';
+      steps.hidden = false;
+    }
+  });
+})();
+</script>
+</body></html>
