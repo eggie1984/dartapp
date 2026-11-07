@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Thuiswedstrijden</title>
+<meta name="theme-color" content="#15493A">
+<link rel="manifest" href="kroeg.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Thuiswedstrijden">
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #EBEFE8; --surface: #F9FBF7; --surface-2: #DFE6DC; --line: #C4CFC2;
+  --ink: #14211A; --ink-2: #4A5A51;
+  --brand: #15493A; --brand-ink: #F2F7F1;
+  --yes: #17683F; --yes-bg: #BDE3CB;
+  --late: #7A5000; --late-bg: #F0DDA0;
+  --no: #A82E24; --no-bg: #F0C4BE;
+  --new: #C8372D;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --font-body: 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0E1713; --surface: #16231D; --surface-2: #1E2F27; --line: #2B3F35;
+    --ink: #E6EFE8; --ink-2: #9FB1A6;
+    --brand: #0B4545; --brand-ink: #F2F7F1;
+    --yes: #8FE0B0; --yes-bg: #1D4A33;
+    --late: #F0D27A; --late-bg: #4A3A0C;
+    --no: #F2A59D; --no-bg: #5A211B;
+    --new: #FF8A80;
+  }
+}
+* { box-sizing: border-box; }
+html { height: 100%; }
+body {
+  margin: 0; min-height: 100%; background: var(--bg); color: var(--ink);
+  font: 16px/1.45 var(--font-body);
+  padding: 0 0 env(safe-area-inset-bottom, 0px);
+}
+header {
+  background: var(--brand); color: var(--brand-ink);
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 14px;
+  position: sticky; top: 0; z-index: 5;
+}
+.bar { max-width: 720px; margin: 0 auto; display: flex; align-items: center; gap: 10px; }
+.bar h1 { margin: 0; font: 700 28px/1 var(--font-display); letter-spacing: .02em; text-transform: uppercase; flex: 1; }
+.bar small { display: block; font: 400 12px/1.3 var(--font-body); letter-spacing: 0; text-transform: none; opacity: .8; margin-top: 3px; }
+.ibtn {
+  appearance: none; border: 1px solid rgba(255,255,255,.4); background: transparent; color: inherit;
+  border-radius: 999px; padding: 8px 14px; font: 600 14px var(--font-body); min-height: 40px; cursor: pointer;
+}
+.ibtn[aria-pressed="true"] { background: rgba(255,255,255,.18); }
+main { max-width: 720px; margin: 0 auto; padding: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.card h2 { margin: 0 0 10px; font: 700 22px/1.1 var(--font-display); letter-spacing: .02em; text-transform: uppercase; }
+.muted { color: var(--ink-2); }
+.small { font-size: 14px; }
+.btn {
+  appearance: none; border: 0; background: var(--brand); color: var(--brand-ink); border-radius: 10px;
+  padding: 12px 18px; font: 600 16px var(--font-body); min-height: 46px; cursor: pointer;
+}
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+input[type=email], input[type=password] {
+  width: 100%; padding: 12px; font: 16px var(--font-body); color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 10px; margin: 4px 0 12px;
+}
+label { font-weight: 600; font-size: 14px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.login { max-width: 420px; margin: 32px auto; }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+/* wijzigingen */
+.changes { margin-bottom: 16px; }
+.chg { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+.chg:first-of-type { border-top: 0; padding-top: 0; }
+.tag { flex: none; align-self: flex-start; font: 700 12px/1 var(--font-body); padding: 5px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: .03em; }
+.tag.added { background: var(--yes-bg); color: var(--yes); }
+.tag.changed { background: var(--late-bg); color: var(--late); }
+.tag.removed { background: var(--no-bg); color: var(--no); }
+.newdot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--new); margin-left: 6px; vertical-align: middle; }
+
+/* filter */
+.chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 12px; }
+.chip {
+  flex: none; appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 999px; padding: 8px 14px; font: 600 14px var(--font-body); min-height: 40px; cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
+
+/* wedstrijden */
+.day { margin: 18px 0 8px; font: 700 20px/1 var(--font-display); letter-spacing: .04em; text-transform: uppercase; color: var(--ink-2); }
+details.match { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; margin-bottom: 10px; overflow: hidden; }
+details.match > summary { list-style: none; cursor: pointer; padding: 14px; display: flex; gap: 14px; align-items: center; }
+details.match > summary::-webkit-details-marker { display: none; }
+.time { font: 700 30px/1 var(--font-display); min-width: 64px; }
+.mid { flex: 1; min-width: 0; }
+.team { font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.opp { font-size: 14px; color: var(--ink-2); overflow-wrap: anywhere; }
+.att { text-align: right; flex: none; }
+.att b { display: block; font: 700 26px/1 var(--font-display); }
+.att span { font-size: 12px; color: var(--ink-2); display: block; max-width: 96px; }
+.chev { flex: none; color: var(--ink-2); transition: transform .15s; }
+details[open] .chev { transform: rotate(90deg); }
+.who { padding: 0 14px 14px; border-top: 1px solid var(--line); }
+.who h3 { margin: 12px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-2); }
+.names { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { padding: 5px 10px; border-radius: 999px; font-size: 14px; font-weight: 600; background: var(--surface-2); }
+.pill.yes { background: var(--yes-bg); color: var(--yes); }
+.pill.late { background: var(--late-bg); color: var(--late); }
+.pill.no { background: var(--no-bg); color: var(--no); text-decoration: line-through; }
+.banner { background: var(--no-bg); color: var(--no); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-weight: 600; }
+.hint { background: var(--surface-2); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-size: 14px; }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <h1>Thuiswedstrijden<small id="sub">Alleen kijken</small></h1>
+    <button class="ibtn" id="bell" type="button" hidden aria-pressed="false">Meldingen</button>
+    <button class="ibtn" id="logout" type="button" hidden>Uitloggen</button>
+  </div>
+</header>
+<main id="main"><p class="muted">Laden…</p></main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+(function () {
+  'use strict';
+  var TZ = 'Europe/Amsterdam';
+  var CFG = window.APP_CONFIG || {};
+  var $ = function (id) { return document.getElementById(id); };
+  var S = { uid: null, email: '', data: null, filter: null, push: false, state: 'start', err: '', loaded: null, signup: false };
+  var sb = null, timer = null;
+
+  /* ---------- kleine hulpjes ---------- */
+  function el(tag, props) {
+    var e = document.createElement(tag);
+    if (props) Object.keys(props).forEach(function (k) {
+      var v = props[k];
+      if (v === null || v === undefined || v === false) return;
+      if (k === 'class') e.className = v;
+      else if (k === 'text') e.textContent = v;
+      else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), v);
+      else e.setAttribute(k, v === true ? '' : v);
+    });
+    for (var i = 2; i < arguments.length; i++) {
+      var kids = [].concat(arguments[i]);
+      kids.forEach(function (c) { if (c === null || c === undefined || c === false) return; e.appendChild(c.nodeType ? c : document.createTextNode(c)); });
+    }
+    return e;
+  }
+  var fDay = new Intl.DateTimeFormat('nl-NL', { timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long' });
+  var fTime = new Intl.DateTimeFormat('nl-NL', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  var fShort = new Intl.DateTimeFormat('nl-NL', { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  var fKey = new Intl.DateTimeFormat('sv-SE', { timeZone: TZ });
+  function dayLabel(iso) {
+    var k = fKey.format(new Date(iso)), now = Date.now();
+    if (k === fKey.format(now)) return 'Vandaag';
+    if (k === fKey.format(now + 864e5)) return 'Morgen';
+    var s = fDay.format(new Date(iso));
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  function hueColor(h) { return h === null || h === undefined ? '#2F8F5B' : 'hsl(' + h + ' 55% 45%)'; }
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+
+  /* ---------- wijzigingen samenvoegen (zelfde regel als de melding) ---------- */
+  function collapse(rows) {
+    var by = {}, order = [];
+    rows.slice().sort(function (a, b) { return a.id - b.id; }).forEach(function (r) {
+      if (!by[r.match_id]) { by[r.match_id] = []; order.push(r.match_id); }
+      by[r.match_id].push(r);
+    });
+    var out = [];
+    order.forEach(function (id) {
+      var l = by[id], f = l[0], z = l[l.length - 1], o = f.old_start, n = z.new_start;
+      if (!o && !n) return;
+      if (o && n && Date.parse(o) === Date.parse(n) && (f.old_loc || '') === (z.new_loc || '')) return;
+      out.push({ kind: !o ? 'added' : !n ? 'removed' : 'changed', team: z.team_name || f.team_name || 'Team', opp: z.opp || f.opp || 'tegenstander onbekend',
+        old_start: o, new_start: n, at: z.created_at });
+    });
+    return out.sort(function (a, b) { return Date.parse(b.at) - Date.parse(a.at); });
+  }
+  function chgText(c) {
+    if (c.kind === 'added') return fShort.format(new Date(c.new_start));
+    if (c.kind === 'removed') return 'Was ' + fShort.format(new Date(c.old_start));
+    if (Date.parse(c.old_start) !== Date.parse(c.new_start)) return fShort.format(new Date(c.old_start)) + ' \u2192 ' + fShort.format(new Date(c.new_start));
+    return fShort.format(new Date(c.new_start)) + ' (locatie of tegenstander gewijzigd)';
+  }
+  var KIND = { added: 'Nieuw', changed: 'Verzet', removed: 'Vervalt' };
+
+  /* ---------- laden ---------- */
+  function load() {
+    if (!sb || !S.uid) return;
+    sb.rpc('venue_overview').then(function (r) {
+      if (r.error) {
+        if (/Geen toegang/i.test(r.error.message || '')) { S.state = 'noaccess'; S.err = ''; }
+        else { S.err = 'Laden is niet gelukt. Controleer je verbinding.'; if (S.state === 'start') S.state = 'ready'; }
+      } else { S.data = r.data; S.state = 'ready'; S.err = ''; S.loaded = new Date(); }
+      render();
+    }).catch(function () { S.err = 'Laden is niet gelukt. Controleer je verbinding.'; if (S.state === 'start') S.state = 'ready'; render(); });
+  }
+
+  /* ---------- tekenen ---------- */
+  function render() {
+    var main = $('main');
+    main.textContent = '';
+    $('logout').hidden = !S.uid;
+    $('bell').hidden = !(S.uid && S.state === 'ready');
+    $('bell').setAttribute('aria-pressed', S.push ? 'true' : 'false');
+    $('bell').textContent = S.push ? 'Meldingen aan' : 'Meldingen aanzetten';
+    $('sub').textContent = S.loaded ? 'Alleen kijken \u00B7 bijgewerkt ' + fTime.format(S.loaded) : 'Alleen kijken';
+
+    if (!CFG.SUPABASE_URL || /JOUW/.test(CFG.SUPABASE_URL)) { main.appendChild(el('div', { class: 'card' }, el('p', { text: 'De app is nog niet gekoppeld aan Supabase (config.js).' }))); return; }
+    if (!S.uid) { main.appendChild(loginView()); return; }
+    if (S.state === 'start') { main.appendChild(el('p', { class: 'muted', text: 'Laden\u2026' })); return; }
+    if (S.state === 'noaccess') {
+      main.appendChild(el('div', { class: 'card' },
+        el('h2', { text: 'Nog geen toegang' }),
+        el('p', { text: 'Dit account (' + S.email + ') mag deze pagina nog niet openen. Geef dit e-mailadres door aan Egbert; die zet je erbij.' }),
+        el('button', { class: 'btn ghost', type: 'button', onclick: load }, 'Opnieuw proberen')));
+      return;
+    }
+    if (S.err) main.appendChild(el('div', { class: 'banner', role: 'alert' }, S.err + ' ', el('button', { class: 'btn ghost', type: 'button', onclick: load }, 'Opnieuw')));
+    if (isIOS() && !standalone()) main.appendChild(el('div', { class: 'hint', text: 'Meldingen op iPhone werken alleen als je deze pagina eerst op je beginscherm zet (deel-knop, dan \u201CZet op beginscherm\u201D) en hem daarvandaan opent.' }));
+    if (!S.data) return;
+
+    main.appendChild(changesView());
+
+    var matches = S.data.matches || [];
+    var teams = {};
+    matches.forEach(function (m) { teams[m.team_id] = { name: m.team_name, hue: m.hue }; });
+    var ids = Object.keys(teams);
+    if (S.filter && !teams[S.filter]) S.filter = null;
+    if (ids.length > 1) {
+      var chips = el('div', { class: 'chips' }, el('button', { class: 'chip', type: 'button', 'aria-pressed': S.filter ? 'false' : 'true', onclick: function () { S.filter = null; render(); } }, 'Alle teams'));
+      ids.forEach(function (id) {
+        chips.appendChild(el('button', { class: 'chip', type: 'button', 'aria-pressed': S.filter === id ? 'true' : 'false', onclick: function () { S.filter = id; render(); } }, teams[id].name));
+      });
+      main.appendChild(chips);
+    }
+
+    var shown = matches.filter(function (m) { return !S.filter || m.team_id === S.filter; });
+    if (!shown.length) { main.appendChild(el('div', { class: 'card' }, el('p', { text: 'Er staan op dit moment geen thuiswedstrijden gepland.' }))); return; }
+    var lastDay = '';
+    shown.forEach(function (m) {
+      var k = fKey.format(new Date(m.start));
+      if (k !== lastDay) { main.appendChild(el('div', { class: 'day', text: dayLabel(m.start) })); lastDay = k; }
+      main.appendChild(matchView(m));
+    });
+  }
+
+  function changesView() {
+    var list = collapse(S.data.changes || []);
+    var seen = parseInt(store('kroeg-seen') || '0', 10);
+    var box = el('section', { class: 'card changes', 'aria-labelledby': 'chg-h' });
+    var fresh = list.filter(function (c) { return Date.parse(c.at) > seen; }).length;
+    box.appendChild(el('h2', { id: 'chg-h' }, 'Wijzigingen', fresh ? el('span', { class: 'newdot', title: fresh + ' nieuw' }) : null));
+    if (!list.length) { box.appendChild(el('p', { class: 'muted small', text: 'De afgelopen drie weken is er niets gewijzigd.' })); return box; }
+    var cap = S.showAll ? list.length : 5;
+    list.slice(0, cap).forEach(function (c) {
+      box.appendChild(el('div', { class: 'chg' },
+        el('span', { class: 'tag ' + c.kind, text: KIND[c.kind] }),
+        el('div', null,
+          el('div', { text: c.team + ' \u2013 ' + c.opp }),
+          el('div', { class: 'small muted', text: chgText(c) }))));
+    });
+    var row = el('div', { class: 'row', style: 'margin-top:10px' });
+    if (list.length > 5) row.appendChild(el('button', { class: 'btn ghost', type: 'button', onclick: function () { S.showAll = !S.showAll; render(); } }, S.showAll ? 'Minder tonen' : 'Alles tonen (' + list.length + ')'));
+    if (fresh) row.appendChild(el('button', { class: 'btn ghost', type: 'button', onclick: function () { store('kroeg-seen', String(Date.now())); render(); } }, 'Gezien'));
+    if (row.childNodes.length) box.appendChild(row);
+    return box;
+  }
+
+  function matchView(m) {
+    var g = { yes: [], late: [], none: [], no: [] };
+    (m.players || []).forEach(function (p) { (g[p.status || 'none'] || g.none).push(p.name); });
+    var coming = g.yes.length + g.late.length, open = g.none.length;
+    var head = coming + ' komen';
+    var sub = open ? open + ' nog niet gereageerd' : (g.no.length ? g.no.length + ' kan niet' : '');
+    if (!coming && open === (m.players || []).length) { head = '\u2013'; sub = 'nog niemand gereageerd'; }
+    var d = el('details', { class: 'match' },
+      el('summary', null,
+        el('div', { class: 'time', text: fTime.format(new Date(m.start)) }),
+        el('div', { class: 'mid' },
+          el('div', { class: 'team' }, el('span', { class: 'dot', style: 'background:' + hueColor(m.hue), 'aria-hidden': 'true' }), m.team_name),
+          el('div', { class: 'opp', text: 'tegen ' + (m.opp || 'nog onbekend') + (m.loc ? ' \u00B7 ' + m.loc : '') })),
+        el('div', { class: 'att' }, el('b', { text: head }), el('span', { text: sub })),
+        el('span', { class: 'chev', 'aria-hidden': 'true', text: '\u203A' })));
+    var who = el('div', { class: 'who' });
+    [['yes', 'Komt', g.yes], ['late', 'Komt later', g.late], ['none', 'Nog niet gereageerd', g.none], ['no', 'Kan niet', g.no]].forEach(function (s) {
+      if (!s[2].length) return;
+      who.appendChild(el('h3', { text: s[1] + ' (' + s[2].length + ')' }));
+      who.appendChild(el('div', { class: 'names' }, s[2].map(function (n) { return el('span', { class: 'pill ' + (s[0] === 'none' ? '' : s[0]), text: n }); })));
+    });
+    if (!who.childNodes.length) who.appendChild(el('p', { class: 'muted small', text: 'Dit team heeft nog geen spelers in de app.' }));
+    d.appendChild(who);
+    return d;
+  }
+
+  function loginView() {
+    var email = el('input', { type: 'email', id: 'aemail', autocomplete: 'username', required: true });
+    var pw = el('input', { type: 'password', id: 'apass', autocomplete: S.signup ? 'new-password' : 'current-password', required: true, minlength: '6' });
+    var f = el('form', { class: 'card login', onsubmit: function (ev) { ev.preventDefault(); auth(email.value.trim(), pw.value); } },
+      el('h2', { text: S.signup ? 'Account maken' : 'Inloggen' }),
+      el('p', { class: 'muted small', text: 'Alleen voor de kastelein en de beheerder. Je ziet welke teams thuis spelen en wie er komen. Wijzigen kan hier niet.' }),
+      el('label', { for: 'aemail', text: 'E-mailadres' }), email,
+      el('label', { for: 'apass', text: 'Wachtwoord (minimaal 6 tekens)' }), pw,
+      el('div', { class: 'row' },
+        el('button', { class: 'btn', type: 'submit' }, S.signup ? 'Account maken' : 'Inloggen'),
+        el('button', { class: 'btn ghost', type: 'button', onclick: function () { S.signup = !S.signup; render(); } }, S.signup ? 'Ik heb al een account' : 'Nieuw account')));
+    return f;
+  }
+  function toast(t) { alert(t); }
+  function auth(email, pw) {
+    if (!email || pw.length < 6) { toast('Vul je e-mailadres en een wachtwoord van minimaal 6 tekens in.'); return; }
+    var p = S.signup ? sb.auth.signUp({ email: email, password: pw }) : sb.auth.signInWithPassword({ email: email, password: pw });
+    p.then(function (r) {
+      if (r.error) toast(S.signup ? 'Account maken is niet gelukt: ' + r.error.message : 'E-mailadres of wachtwoord klopt niet.');
+      else if (S.signup && !r.data.session) toast('Account gemaakt. Bevestig je e-mail en log daarna in.');
+    });
+  }
+
+  /* ---------- meldingen ---------- */
+  function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent); }
+  function standalone() { return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; }
+  function urlB64(s) {
+    var p = '='.repeat((4 - s.length % 4) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/'));
+    return Uint8Array.from(b, function (ch) { return ch.charCodeAt(0); });
+  }
+  function pushOK() { return 'serviceWorker' in navigator && 'PushManager' in window; }
+  function checkPush() {
+    if (!pushOK()) return;
+    navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); })
+      .then(function (sub) { S.push = !!sub; render(); }).catch(function () {});
+  }
+  function togglePush() {
+    if (!pushOK()) { toast('Meldingen werken hier niet. Op iPhone: zet de pagina eerst op je beginscherm en open hem daarvandaan.'); return; }
+    navigator.serviceWorker.ready.then(function (reg) {
+      return reg.pushManager.getSubscription().then(function (sub) {
+        if (S.push && sub) { // uitzetten
+          return sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint)
+            .then(function () { return sub.unsubscribe(); })
+            .then(function () { S.push = false; render(); });
+        }
+        return Notification.requestPermission().then(function (perm) {
+          if (perm !== 'granted') { toast('Meldingen zijn niet toegestaan. Zet ze aan in de instellingen van je telefoon of browser.'); return; }
+          return (sub ? Promise.resolve(sub) : reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64(CFG.VAPID_PUBLIC_KEY) })).then(function (s) {
+            var j = s.toJSON();
+            return sb.from('push_subscriptions').upsert({ endpoint: j.endpoint, user_id: S.uid, p256dh: j.keys.p256dh, auth: j.keys.auth }, { onConflict: 'endpoint' })
+              .then(function (r) { if (r.error) throw r.error; S.push = true; render(); });
+          });
+        });
+      });
+    }).catch(function () { toast('Meldingen aan- of uitzetten is niet gelukt.'); });
+  }
+
+  /* ---------- start ---------- */
+  $('bell').addEventListener('click', togglePush);
+  $('logout').addEventListener('click', function () { if (sb) sb.auth.signOut(); });
+  render();
+  if (!CFG.SUPABASE_URL || /JOUW/.test(CFG.SUPABASE_URL)) return;
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+  sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
+  sb.auth.onAuthStateChange(function (ev, session) {
+    var id = session ? session.user.id : null;
+    if (id && id === S.uid) return;
+    S.uid = id; S.email = session ? session.user.email : '';
+    if (id) { S.state = 'start'; S.data = null; render(); setTimeout(function () { load(); checkPush(); }, 0); }
+    else { S.state = 'start'; S.data = null; S.push = false; S.loaded = null; render(); }
+  });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && S.uid) load(); });
+  timer = setInterval(function () { if (!document.hidden && S.uid && S.state === 'ready') load(); }, 60000);
+})();
+</script>
+</body>
+</html>
