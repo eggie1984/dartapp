@@ -280,12 +280,15 @@ details[open] .chev { transform: rotate(90deg); }
   }
 
   function matchView(m) {
-    var g = { yes: [], late: [], none: [], no: [] };
-    (m.players || []).forEach(function (p) { (g[p.status || 'none'] || g.none).push(p.name); });
-    var coming = g.yes.length + g.late.length, open = g.none.length;
-    var head = coming + ' komen';
-    var sub = open ? open + ' nog niet gereageerd' : (g.no.length ? g.no.length + ' kan niet' : '');
-    if (!coming && open === (m.players || []).length) { head = '\u2013'; sub = 'nog niemand gereageerd'; }
+    // Zelfde regel als de spelersapp: geen antwoord telt als "komt"; alleen "komt later" en "kan niet" wijken af.
+    var g = { yes: [], late: [], no: [] };
+    (m.players || []).forEach(function (p) { (g[p.status === 'late' || p.status === 'no' ? p.status : 'yes']).push(p.name); });
+    var coming = g.yes.length + g.late.length, total = (m.players || []).length;
+    var head = total ? coming + ' komen' : '\u2013';
+    var parts = [];
+    if (g.late.length) parts.push(g.late.length + ' later');
+    if (g.no.length) parts.push(g.no.length + ' kan niet');
+    var sub = total ? parts.join(' \u00B7 ') : 'nog geen spelers';
     var d = el('details', { class: 'match' },
       el('summary', null,
         el('div', { class: 'time', text: fTime.format(new Date(m.start)) }),
@@ -295,10 +298,10 @@ details[open] .chev { transform: rotate(90deg); }
         el('div', { class: 'att' }, el('b', { text: head }), el('span', { text: sub })),
         el('span', { class: 'chev', 'aria-hidden': 'true', text: '\u203A' })));
     var who = el('div', { class: 'who' });
-    [['yes', 'Komt', g.yes], ['late', 'Komt later', g.late], ['none', 'Nog niet gereageerd', g.none], ['no', 'Kan niet', g.no]].forEach(function (s) {
+    [['yes', 'Komt', g.yes], ['late', 'Komt later', g.late], ['no', 'Kan niet', g.no]].forEach(function (s) {
       if (!s[2].length) return;
       who.appendChild(el('h3', { text: s[1] + ' (' + s[2].length + ')' }));
-      who.appendChild(el('div', { class: 'names' }, s[2].map(function (n) { return el('span', { class: 'pill ' + (s[0] === 'none' ? '' : s[0]), text: n }); })));
+      who.appendChild(el('div', { class: 'names' }, s[2].map(function (n) { return el('span', { class: 'pill ' + s[0], text: n }); })));
     });
     if (!who.childNodes.length) who.appendChild(el('p', { class: 'muted small', text: 'Dit team heeft nog geen spelers in de app.' }));
     d.appendChild(who);
