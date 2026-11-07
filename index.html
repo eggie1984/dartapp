@@ -270,6 +270,14 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
 .teamitem.off .tn { opacity: .55; text-decoration: line-through; }
 .codeout { background: var(--surface-2); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
 .codeout textarea { width: 100%; min-height: 150px; font: inherit; font-size: 14px; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); box-sizing: border-box; }
+.grp, .sec { border: 1px solid var(--line); border-radius: 12px; background: var(--bg); padding: 0 14px; }
+.grp > summary, .sec > summary { min-height: 48px; display: flex; align-items: center; font-weight: 600; color: var(--ink); cursor: pointer; }
+.grp > summary { font-size: 16px; }
+.grp[open] > summary, .sec[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+.grpbody { display: flex; flex-direction: column; gap: 10px; padding-bottom: 14px; }
+.secbody { display: flex; flex-direction: column; gap: 12px; padding-bottom: 14px; }
+.sec { background: var(--surface); }
+.addform:first-child { border-top: 0; padding-top: 0; }
 @media (max-width: 380px) {
   .opt { font-size: 14px; gap: 4px; }
   .opt svg { display: none; }
@@ -309,67 +317,116 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   <details class="panel" id="admin" hidden>
     <summary>Beheer voor de captain</summary>
     <div class="body">
-      <h3>Wedstrijden inladen</h3>
-      <p>Kies het .ics-bestand uit Teambeheer van de dartbond. Nieuwe wedstrijden worden toegevoegd en gewijzigde datums of locaties worden bijgewerkt. Antwoorden van spelers blijven staan.</p>
-      <input type="file" id="icsfile" accept=".ics,text/calendar">
-      <div id="importout"></div>
-      <h3>Spelers</h3>
-      <p>Elke speler kiest zelf zijn naam. Een verkeerde keuze maak je hier los, dan kan de speler opnieuw kiezen. Een gevuld groen bolletje betekent dat de speler zijn naam heeft gekozen, een leeg bolletje dat dit nog niet is gebeurd.</p>
-      <ul class="links" id="claimlist"></ul>
-      <form id="addform" class="addform">
-        <label for="newname">Nieuwe speler</label>
-        <input type="text" id="newname" maxlength="40" autocomplete="off" placeholder="Voor- en achternaam" required>
-        <label for="newrole">Functie</label>
-        <select id="newrole">
-          <option value="">Speler</option>
-          <option value="C">Captain (C)</option>
-          <option value="RC">Reserve-captain (RC)</option>
-        </select>
-        <button class="btn" type="submit">Speler toevoegen</button>
-      </form>
-      <h3>Team</h3>
-      <form id="teamform" class="addform">
-        <label for="tname">Teamnaam</label>
-        <input id="tname" maxlength="60" required>
-        <p class="note">Gebruik de naam zoals die in Teambeheer staat. Anders herkent het inladen van wedstrijden niet wat thuis en uit is.</p>
-        <label for="tmin">Minimaal aantal spelers per wedstrijd</label>
-        <input id="tmin" type="number" min="1" max="20" required>
-        <button class="btn" type="submit">Opslaan</button>
-      </form>
-      <p id="teamcode"></p>
-      <button type="button" class="linkbtn" id="newcode">Nieuwe teamcode maken</button>
-      <h3>Wie mag beheren</h3>
-      <p>Beheerders kunnen wedstrijden en spelers beheren, antwoorden voor anderen invullen en meldingen sturen. Zij krijgen ook de melding als een wedstrijd onder de 4 spelers komt. Alleen spelers die hun naam hebben gekozen staan hier.</p>
-      <ul class="links" id="adminlist"></ul>
-      <h3>Melding sturen</h3>
-      <p>Stuurt een melding naar iedereen, of alleen naar de spelers die je kiest. Het bericht komt alleen aan bij spelers die meldingen hebben aangezet.</p>
-      <form id="msgform" class="addform">
-        <label id="msgtolabel">Aan</label>
-        <div class="chips" id="msgto" role="group" aria-labelledby="msgtolabel"></div>
-        <label for="msgtitle">Titel</label>
-        <input type="text" id="msgtitle" maxlength="60" autocomplete="off" placeholder="Bijv. Wedstrijd verzet" required>
-        <label for="msgbody">Bericht</label>
-        <textarea id="msgbody" rows="3" maxlength="200" placeholder="Schrijf je bericht" required></textarea>
-        <button class="btn" type="submit" id="msgsend">Verstuur naar iedereen</button>
-        <button type="button" class="linkbtn" data-act="testpush">Alleen een testmelding sturen</button>
-      </form>
-      <h3>Wedstrijden beheren</h3>
-      <form id="matchform" class="addform">
-        <label id="mflabel" for="mdate">Wedstrijd toevoegen</label>
-        <input type="datetime-local" id="mdate" required>
-        <label for="mopp">Tegenstander</label>
-        <input type="text" id="mopp" maxlength="80" autocomplete="off" placeholder="Nog niet bekend">
-        <label for="mhome">Thuis of uit</label>
-        <select id="mhome"><option value="">Nog onbekend</option><option value="1">Thuis</option><option value="0">Uit</option></select>
-        <label for="mloc">Locatie</label>
-        <input type="text" id="mloc" maxlength="200" autocomplete="off" placeholder="Café, straat 1, plaats">
-        <label><input type="checkbox" id="mnotify" style="width:auto;min-height:0;margin-right:8px">Stuur het team een melding over deze wijziging</label>
-        <div class="acts"><button class="btn" type="submit" id="msave">Wedstrijd toevoegen</button><button type="button" class="linkbtn" id="mcancel" data-act="match-cancel" hidden>Annuleer wijziging</button></div>
-      </form>
-      <details id="mdet"><summary id="mdsum">Alle wedstrijden</summary><ul class="links" id="matchlist"></ul></details>
-      <h3>Nieuw seizoen</h3>
-      <p>Aan het einde van het seizoen haal je hier alle wedstrijden en alle antwoorden weg. De spelers en hun accounts blijven staan. Importeer daarna de nieuwe speelkalender hierboven.</p>
-      <div id="seasonbox"></div>
+      <details class="grp" name="adm-top">
+        <summary>Agenda</summary>
+        <div class="grpbody">
+        <details class="sec" name="adm-agenda">
+          <summary>Wedstrijden inladen</summary>
+          <div class="secbody">
+          <p>Kies het .ics-bestand uit Teambeheer van de dartbond. Nieuwe wedstrijden worden toegevoegd en gewijzigde datums of locaties worden bijgewerkt. Antwoorden van spelers blijven staan.</p>
+          <input type="file" id="icsfile" accept=".ics,text/calendar">
+          <div id="importout"></div>
+          </div>
+        </details>
+        <details class="sec" name="adm-agenda">
+          <summary>Wedstrijden toevoegen of wijzigen</summary>
+          <div class="secbody">
+          <form id="matchform" class="addform">
+            <label id="mflabel" for="mdate">Wedstrijd toevoegen of wijzigen</label>
+            <input type="datetime-local" id="mdate" required>
+            <label for="mopp">Tegenstander</label>
+            <input type="text" id="mopp" maxlength="80" autocomplete="off" placeholder="Nog niet bekend">
+            <label for="mhome">Thuis of uit</label>
+            <select id="mhome"><option value="">Nog onbekend</option><option value="1">Thuis</option><option value="0">Uit</option></select>
+            <label for="mloc">Locatie</label>
+            <input type="text" id="mloc" maxlength="200" autocomplete="off" placeholder="Café, straat 1, plaats">
+            <label><input type="checkbox" id="mnotify" style="width:auto;min-height:0;margin-right:8px">Stuur het team een melding over deze wijziging</label>
+            <div class="acts"><button class="btn" type="submit" id="msave">Wedstrijd toevoegen</button><button type="button" class="linkbtn" id="mcancel" data-act="match-cancel" hidden>Annuleer wijziging</button></div>
+          </form>
+          <details id="mdet"><summary id="mdsum">Alle wedstrijden</summary><ul class="links" id="matchlist"></ul></details>
+          </div>
+        </details>
+        <details class="sec" name="adm-agenda">
+          <summary>Seizoen afsluiten</summary>
+          <div class="secbody">
+          <p>Aan het einde van het seizoen haal je hier alle wedstrijden en alle antwoorden weg. De spelers en hun accounts blijven staan. Importeer daarna de nieuwe speelkalender hierboven.</p>
+          <div id="seasonbox"></div>
+          </div>
+        </details>
+        </div>
+      </details>
+      <details class="grp" name="adm-top">
+        <summary>Spelers</summary>
+        <div class="grpbody">
+        <details class="sec" name="adm-spelers">
+          <summary>Spelers beheren</summary>
+          <div class="secbody">
+          <p>Elke speler kiest zelf zijn naam. Een verkeerde keuze maak je hier los, dan kan de speler opnieuw kiezen. Een gevuld groen bolletje betekent dat de speler zijn naam heeft gekozen, een leeg bolletje dat dit nog niet is gebeurd.</p>
+          <ul class="links" id="claimlist"></ul>
+          <form id="addform" class="addform">
+            <label for="newname">Nieuwe speler</label>
+            <input type="text" id="newname" maxlength="40" autocomplete="off" placeholder="Voor- en achternaam" required>
+            <label for="newrole">Functie</label>
+            <select id="newrole">
+              <option value="">Speler</option>
+              <option value="C">Captain (C)</option>
+              <option value="RC">Reserve-captain (RC)</option>
+            </select>
+            <button class="btn" type="submit">Speler toevoegen</button>
+          </form>
+          </div>
+        </details>
+        <details class="sec" name="adm-spelers">
+          <summary>Wie mag beheren</summary>
+          <div class="secbody">
+          <p>Beheerders kunnen wedstrijden en spelers beheren, antwoorden voor anderen invullen en meldingen sturen. Zij krijgen ook de melding als een wedstrijd onder het minimum aantal spelers van het team komt. Alleen spelers die hun naam hebben gekozen staan hier.</p>
+          <ul class="links" id="adminlist"></ul>
+          </div>
+        </details>
+        </div>
+      </details>
+      <details class="grp" name="adm-top">
+        <summary>Berichten sturen</summary>
+        <div class="grpbody">
+          <p>Stuurt een melding naar iedereen, of alleen naar de spelers die je kiest. Het bericht komt alleen aan bij spelers die meldingen hebben aangezet.</p>
+          <form id="msgform" class="addform">
+            <label id="msgtolabel">Aan</label>
+            <div class="chips" id="msgto" role="group" aria-labelledby="msgtolabel"></div>
+            <label for="msgtitle">Titel</label>
+            <input type="text" id="msgtitle" maxlength="60" autocomplete="off" placeholder="Bijv. Wedstrijd verzet" required>
+            <label for="msgbody">Bericht</label>
+            <textarea id="msgbody" rows="3" maxlength="200" placeholder="Schrijf je bericht" required></textarea>
+            <button class="btn" type="submit" id="msgsend">Verstuur naar iedereen</button>
+            <button type="button" class="linkbtn" data-act="testpush">Alleen een testmelding sturen</button>
+          </form>
+        </div>
+      </details>
+      <details class="grp" name="adm-top">
+        <summary>Team</summary>
+        <div class="grpbody">
+        <details class="sec" name="adm-team">
+          <summary>Teamnaam en minimum</summary>
+          <div class="secbody">
+          <form id="teamform" class="addform">
+            <label for="tname">Teamnaam (komt in de koptekst)</label>
+            <input id="tname" maxlength="60" required>
+            <p class="note">Gebruik de naam zoals die in Teambeheer staat. Anders herkent het inladen van wedstrijden niet wat thuis en uit is.</p>
+            <label for="tmin">Minimaal aantal spelers per wedstrijd</label>
+            <input id="tmin" type="number" min="1" max="20" required>
+            <button class="btn" type="submit">Opslaan</button>
+          </form>
+          </div>
+        </details>
+        <details class="sec" name="adm-team">
+          <summary>Teamcode</summary>
+          <div class="secbody">
+          <p>Nieuwe spelers sluiten aan met deze code, of met de QR-code onder "Nieuwe speler uitnodigen".</p>
+          <p id="teamcode"></p>
+          <button type="button" class="linkbtn" id="newcode">Nieuwe teamcode maken</button>
+          </div>
+        </details>
+        </div>
+      </details>
     </div>
   </details>
 
@@ -1032,6 +1089,15 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
       if (el && el.focus) el.focus({ preventScroll: true });
     }
   }
+
+  /* accordion: per niveau blijft maar een kopje open */
+  document.addEventListener('toggle', function (ev) {
+    var d = ev.target;
+    if (!d.open || !d.matches || !d.matches('details.grp, details.sec')) return;
+    Array.prototype.forEach.call(d.parentNode.children, function (o) {
+      if (o !== d && o.tagName === 'DETAILS' && o.open) o.open = false;
+    });
+  }, true);
 
   /* ---------- clicks ---------- */
   document.addEventListener('click', function (ev) {
