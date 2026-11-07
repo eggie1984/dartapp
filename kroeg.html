@@ -258,23 +258,27 @@ details[open] .chev { transform: rotate(90deg); }
   }
 
   function changesView() {
-    var list = collapse(S.data.changes || []);
+    var all = collapse(S.data.changes || []);
     var seen = parseInt(store('kroeg-seen') || '0', 10);
+    var isNew = function (c) { return Date.parse(c.at) > seen; };
+    var fresh = all.filter(isNew).length, old = all.length - fresh;
+    var list = S.showOld ? all : all.filter(isNew);
     var box = el('section', { class: 'card changes', 'aria-labelledby': 'chg-h' });
-    var fresh = list.filter(function (c) { return Date.parse(c.at) > seen; }).length;
     box.appendChild(el('h2', { id: 'chg-h' }, 'Wijzigingen', fresh ? el('span', { class: 'newdot', title: fresh + ' nieuw' }) : null));
-    if (!list.length) { box.appendChild(el('p', { class: 'muted small', text: 'De afgelopen drie weken is er niets gewijzigd.' })); return box; }
+    if (!all.length) { box.appendChild(el('p', { class: 'muted small', text: 'De afgelopen drie weken is er niets gewijzigd.' })); return box; }
+    if (!list.length) box.appendChild(el('p', { class: 'muted small', text: 'Geen nieuwe wijzigingen.' }));
     var cap = S.showAll ? list.length : 5;
     list.slice(0, cap).forEach(function (c) {
       box.appendChild(el('div', { class: 'chg' },
         el('span', { class: 'tag ' + c.kind, text: KIND[c.kind] }),
         el('div', null,
           el('div', { text: c.team + ' \u2013 ' + c.opp }),
-          el('div', { class: 'small muted', text: chgText(c) }))));
+          el('div', { class: 'small muted', text: chgText(c) + (S.showOld && !isNew(c) ? ' \u00B7 al gezien' : '') }))));
     });
     var row = el('div', { class: 'row', style: 'margin-top:10px' });
     if (list.length > 5) row.appendChild(el('button', { class: 'btn ghost', type: 'button', onclick: function () { S.showAll = !S.showAll; render(); } }, S.showAll ? 'Minder tonen' : 'Alles tonen (' + list.length + ')'));
-    if (fresh) row.appendChild(el('button', { class: 'btn ghost', type: 'button', onclick: function () { store('kroeg-seen', String(Date.now())); render(); } }, 'Gezien'));
+    if (fresh) row.appendChild(el('button', { class: 'btn ghost', type: 'button', onclick: function () { store('kroeg-seen', String(Date.now())); S.showAll = false; S.showOld = false; render(); } }, 'Wissen'));
+    if (old) row.appendChild(el('button', { class: 'btn ghost', type: 'button', onclick: function () { S.showOld = !S.showOld; S.showAll = false; render(); } }, S.showOld ? 'Eerdere verbergen' : 'Eerdere tonen (' + old + ')'));
     if (row.childNodes.length) box.appendChild(row);
     return box;
   }
