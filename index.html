@@ -278,6 +278,11 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
 .secbody { display: flex; flex-direction: column; gap: 12px; padding-bottom: 14px; }
 .sec { background: var(--surface); }
 .addform:first-child { border-top: 0; padding-top: 0; }
+.filebtn { cursor: pointer; }
+.qrpanel { display: flex; flex-direction: column; gap: 8px; padding: 6px 0; }
+.qrpanel[hidden] { display: none; }
+.qrpanel .qrwrap { background: #fff; padding: 10px; border-radius: 12px; line-height: 0; align-self: flex-start; }
+.qrpanel .qrwrap svg { width: 190px; height: 190px; display: block; }
 @media (max-width: 380px) {
   .opt { font-size: 14px; gap: 4px; }
   .opt svg { display: none; }
@@ -1110,6 +1115,8 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
       unclaim(state.uid);
     } else if (act === 't-join' || act === 't-cap') {
       run(sb.rpc('reset_code', { p_team: t.getAttribute('data-tid'), p_which: act === 't-join' ? 'join' : 'captain' })).then(function () { toast('Nieuwe code gemaakt.'); loadTeams(); }).catch(rpcFail);
+    } else if (act === 't-qr') {
+      toggleTeamQr(t.getAttribute('data-tid'));
     } else if (act === 't-rename') {
       var tr = teamById(t.getAttribute('data-tid'));
       var nn = tr && window.prompt('Nieuwe naam voor het team (komt in de koptekst):', tr.name);
@@ -1179,7 +1186,8 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
       .formatToParts(new Date(ms)).reduce(function (o, x) { o[x.type] = x.value; return o; }, {});
     return Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute, +parts.second) - ms;
   }
-  function parseICS(text) {
+  function parseICS(text, teamName, teamId) {
+    var TEAM_NAME = teamName === undefined ? TEAM : teamName;
     var raw = text.replace(/\r\n/g, '\n').replace(/\n[ \t]/g, '');
     var out = [];
     raw.split('BEGIN:VEVENT').slice(1).forEach(function (blk) {
@@ -1195,12 +1203,12 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
       var ms = Date.UTC(+mt[1], +mt[2] - 1, +mt[3], +mt[4], +mt[5], +mt[6]);
       if (!mt[7]) ms -= amsOffset(ms);
       var s = (f.SUMMARY || '').trim(), home = null, opp = s;
-      if (s.indexOf(TEAM) === 0) { home = true; opp = s.slice(TEAM.length); }
-      else if (s.length >= TEAM.length && s.lastIndexOf(TEAM) === s.length - TEAM.length) { home = false; opp = s.slice(0, s.length - TEAM.length); }
+      if (s.indexOf(TEAM_NAME) === 0) { home = true; opp = s.slice(TEAM_NAME.length); }
+      else if (s.length >= TEAM_NAME.length && s.lastIndexOf(TEAM_NAME) === s.length - TEAM_NAME.length) { home = false; opp = s.slice(0, s.length - TEAM_NAME.length); }
       opp = opp.replace(/^[\s-]+|[\s-]+$/g, '');
       var loc = (f.LOCATION || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean).join(', ');
       if (!opp && !loc) home = null;
-      out.push({ id: state.team.id.slice(0, 8) + '-' + f.UID.split('@')[0].replace(/[^A-Za-z0-9_.~:+-]/g, ''), start: new Date(ms).toISOString().replace('.000Z', 'Z'), opp: opp, home: home, loc: loc });
+      out.push({ uid: f.UID.split('@')[0].replace(/[^A-Za-z0-9_.~:+-]/g, ''), id: (teamId || state.team.id).slice(0, 8) + '-' + f.UID.split('@')[0].replace(/[^A-Za-z0-9_.~:+-]/g, ''), start: new Date(ms).toISOString().replace('.000Z', 'Z'), opp: opp, home: home, loc: loc });
     });
     return out.sort(byStart);
   }
@@ -1213,26 +1221,18 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     file.text().then(function (txt) {
       var list = parseICS(txt);
       if (!list.length) { out.textContent = 'In dit bestand staan geen wedstrijden.'; state.pending = null; return; }
-      var cur = {};
-      state.matches.forEach(function (m) { cur[m.id] = m; });
-      var fresh = 0, changed = 0;
-      list.forEach(function (m) { if (!cur[m.id]) fresh++; else if (!same(cur[m.id], m)) changed++; });
       state.pending = list;
-      out.innerHTML = '<p><strong>' + list.length + ' wedstrijden gevonden:</strong> ' + fresh + ' nieuw, ' + changed + ' gewijzigd.</p>' +
+      out.innerHTML = '<p><strong>' + list.length + ' wedstrijden gevonden.</strong></p><p class="note">Wedstrijden die niet veranderd zijn blijven zoals ze zijn, met hun antwoorden. Is de datum of tijd gewijzigd, dan wordt die aangepast. Nieuwe wedstrijden worden toegevoegd en wedstrijden die al geweest zijn worden verwijderd.</p>' +
         (db ? '<button class="btn" data-act="import-save">Opslaan voor het team</button>' : '<p>Opslaan kan alleen in de gedeelde versie van deze pagina.</p>');
     }).catch(function () { out.textContent = 'Het bestand kon niet worden gelezen.'; });
   });
 
   function saveImport() {
     var list = state.pending, out = $('importout');
-    if (!list || !sb) return;
-    var cur = {};
-    state.matches.forEach(function (m) { cur[m.id] = m; });
-    var todo = list.filter(function (m) { return !same(cur[m.id], m); });
-    if (!todo.length) { out.textContent = 'Alles was al up-to-date.'; return; }
+    if (!list || !sb || !state.team) return;
     out.textContent = 'Opslaan...';
-    run(sb.from('matches').upsert(todo.map(function (m) { return { id: m.id, team_id: state.team.id, start: m.start, opp: m.opp, home: m.home, loc: m.loc }; })))
-      .then(function () { out.textContent = 'Klaar. ' + todo.length + ' wedstrijden bijgewerkt.'; state.pending = null; toast('Wedstrijden opgeslagen.'); return loadAll(); })
+    run(sb.rpc('sync_matches', { p_team: state.team.id, p_matches: list.map(function (m) { return { uid: m.uid, start: m.start, opp: m.opp, home: m.home, loc: m.loc }; }) }))
+      .then(function (r) { out.textContent = 'Klaar. ' + syncText(r.data || {}); state.pending = null; toast('Wedstrijden bijgewerkt.'); return loadAll(); })
       .catch(function (e) { out.textContent = 'Opslaan is mislukt.'; writeFail(e); });
   }
 
@@ -1333,12 +1333,53 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
       return '<li class="teamitem' + (t.active ? '' : ' off') + '"><div class="th"><span class="huedot" style="width:18px;height:18px;background:' + hueColor(t.hue) + '"></span><strong class="tn">' + esc(t.name) + '</strong><span class="note">' + t.members + ' leden' + (t.active ? '' : ' · uit') + '</span></div>' +
         '<div class="tcodes">Teamcode: <b>' + esc(t.join_code || '') + '</b>' + (t.captain_code ? '<br>Code voor beheerder: <b>' + esc(t.captain_code) + '</b>' : '<br>Beheerder is aangesloten') + '</div>' +
         '<div class="tacts"><button class="linkbtn" data-act="t-rename" data-tid="' + t.id + '">Naam wijzigen</button>' +
+        '<button class="linkbtn" data-act="t-qr" data-tid="' + t.id + '">QR beheerder</button>' +
+        '<label class="linkbtn filebtn">Wedstrijden inladen<input type="file" accept=".ics,text/calendar" data-ics="' + t.id + '" hidden></label>' +
         '<button class="linkbtn" data-act="t-join" data-tid="' + t.id + '">Nieuwe teamcode</button>' +
         '<button class="linkbtn" data-act="t-cap" data-tid="' + t.id + '">Nieuwe beheerderscode</button>' +
         '<button class="linkbtn" data-act="t-active" data-tid="' + t.id + '" data-v="' + (t.active ? '0' : '1') + '">' + (t.active ? 'Zet uit' : 'Zet aan') + '</button>' +
-        '<button class="linkbtn danger" data-act="t-del" data-tid="' + t.id + '">Verwijder</button></div></li>';
+        '<button class="linkbtn danger" data-act="t-del" data-tid="' + t.id + '">Verwijder</button></div>' +
+        '<div class="qrpanel" id="qr-' + t.id + '" hidden></div></li>';
     }).join('') || '<li><span class="note">Nog geen teams.</span></li>';
   }
+  function toggleTeamQr(id) {
+    var box = $('qr-' + id), tm = teamById(id);
+    if (!box || !tm) return;
+    if (!box.hidden) { box.hidden = true; return; }
+    if (!tm.captain_code) {
+      box.innerHTML = '<p class="note">De beheerder van dit team is al aangesloten. Maak eerst een nieuwe beheerderscode als je een nieuwe QR-code wilt.</p>';
+    } else {
+      var link = baseUrl() + '?team=' + tm.captain_code;
+      box.innerHTML = '<div class="qrwrap">' + (window.qrSvg ? window.qrSvg(link) : '') + '</div><p class="tcodes">Laat de beheerder van <b>' + esc(tm.name) + '</b> deze code scannen. Hij wordt dan beheerder van het team.<br>Code: <b>' + esc(tm.captain_code) + '</b></p>';
+    }
+    box.hidden = false;
+  }
+  function syncText(r) {
+    var t = r.new + ' nieuw, ' + r.updated + ' gewijzigd, ' + r.unchanged + ' ongewijzigd';
+    if (r.past_removed) t += ', ' + r.past_removed + ' verwijderd omdat ze geweest zijn';
+    if (r.not_in_file) t += '. ' + r.not_in_file + ' komende wedstrijd(en) staan niet in het bestand en zijn blijven staan';
+    return t + '.';
+  }
+  function importIcsForTeam(tid, file) {
+    var tm = teamById(tid); if (!tm || !file) return;
+    var rd = new FileReader();
+    rd.onload = function () {
+      var list = parseICS(String(rd.result), tm.name, tm.id);
+      if (!list.length) { toast('Geen wedstrijden gevonden in dit bestand.'); return; }
+      var known = list.filter(function (m) { return m.home !== null; }).length;
+      var msg = list.length + ' wedstrijden gevonden voor ' + tm.name + (known === 0 ? '. Let op: de teamnaam komt niet in het bestand voor, dus thuis/uit is onbekend' : '') + '.\n\n' +
+        'Wedstrijden die niet veranderd zijn blijven zoals ze zijn (met hun antwoorden). Is de datum of tijd gewijzigd, dan wordt die aangepast. Nieuwe wedstrijden worden toegevoegd en wedstrijden die al geweest zijn worden verwijderd. Doorgaan?';
+      if (!window.confirm(msg)) return;
+      run(sb.rpc('sync_matches', { p_team: tm.id, p_matches: list.map(function (m) { return { uid: m.uid, start: m.start, opp: m.opp, home: m.home, loc: m.loc }; }) }))
+        .then(function (r) { toast(tm.name + ': ' + syncText(r.data || {})); loadTeams(); }).catch(rpcFail);
+    };
+    rd.readAsText(file);
+  }
+  document.addEventListener('change', function (ev) {
+    var inp = ev.target; if (!inp || !inp.getAttribute) return;
+    var tid = inp.getAttribute('data-ics');
+    if (tid && inp.files && inp.files[0]) { importIcsForTeam(tid, inp.files[0]); inp.value = ''; }
+  });
   function teamById(id) { return (state.teams || []).filter(function (t) { return t.id === id; })[0]; }
   function showNewTeam(name, j, c) {
     var link = baseUrl() + '?team=' + c;
@@ -2612,6 +2653,7 @@ return R("index");})();
   function $(id) { return document.getElementById(id); }
 
   /* ---------- QR ---------- */
+  window.qrSvg = qrSvg;
   function qrSvg(text) {
     var q = new QRLib(-1, 0); /* niveau M */
     q.addData(text); q.make();
