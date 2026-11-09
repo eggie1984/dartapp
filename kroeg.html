@@ -411,8 +411,8 @@ details[open] .chev { transform: rotate(90deg); }
   var deferred = null, dismissed = false;
   try { dismissed = sessionStorage.getItem('kroeg-dl-dicht') === '1'; } catch (e) {}
   if (standalone || dismissed) return;            /* al geïnstalleerd of net weggeklikt */
-  box.hidden = false;
-  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; });
+  if (ios) box.hidden = false;                    /* iPhone: altijd tonen, daar is er geen install-event */
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; box.hidden = false; });
   window.addEventListener('appinstalled', function () { box.hidden = true; });
   go.addEventListener('click', function () {
     if (deferred) {
