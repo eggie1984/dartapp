@@ -183,6 +183,9 @@ main { padding-top: 18px; display: flex; flex-direction: column; gap: 16px; }
 .addr { font-size: 14px; color: var(--ink-2); }
 .acts { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
 
+.viewbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 16px; background: #7A5A00; color: #fff; font-weight: 600; }
+.viewbar[hidden] { display: none; }
+.viewbar .linkbtn { color: #fff; }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 0 16px; }
 .panel[hidden] { display: none; }
 .panel > summary { min-height: 52px; display: flex; align-items: center; font-weight: 600; cursor: pointer; }
@@ -321,6 +324,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   </form>
 </dialog>
 
+<div class="viewbar" id="viewbar" hidden><span>Je bekijkt <b id="viewname"></b> (alleen kijken)</span><button type="button" class="linkbtn" data-act="t-back">Terug naar mijn team</button></div>
 <main class="in">
   <p class="note" id="note" hidden></p>
   <div class="installbar" id="installbar" hidden>
@@ -639,6 +643,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   }
   function claim(pid) {
     if (!sb || !state.uid) return;
+    if (state.viewTeam) { toast('Je bekijkt een ander team.'); return; }
     if (claimUid(pid)) { toast('Die naam is al gekozen. Vraag de captain om hem los te maken.'); return; }
     run(sb.rpc('claim_player', { p_player: pid })).then(loadAll).catch(rpcFail);
   }
@@ -1127,6 +1132,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     var ae = document.activeElement, fk = ae && ae.dataset ? ae.dataset.fk : null;
     $('season').textContent = state.team ? 'Wie gooit er mee? Seizoen ' + seasonLabel() : 'Voor darts-teams';
     $('teamname').textContent = state.team ? state.team.name : 'Wie gooit er mee?';
+    $('viewbar').hidden = !state.viewTeam; $('viewname').textContent = state.team ? state.team.name : '';
     document.title = state.team ? state.team.name : 'Wie gooit er mee?';
     document.documentElement.classList.toggle('noteam', state.dbState === 'ok' && !state.team);
     renderNote();
@@ -1162,6 +1168,12 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
       unclaim(state.uid);
     } else if (act === 't-join' || act === 't-cap') {
       run(sb.rpc('reset_code', { p_team: t.getAttribute('data-tid'), p_which: act === 't-join' ? 'join' : 'captain' })).then(function () { toast('Nieuwe code gemaakt.'); loadTeams(); }).catch(rpcFail);
+    } else if (act === 't-view') {
+      state.viewTeam = t.getAttribute('data-tid'); state.expanded = {};
+      window.scrollTo(0, 0); loadAll();
+    } else if (act === 't-back') {
+      state.viewTeam = null; state.expanded = {};
+      window.scrollTo(0, 0); loadAll();
     } else if (act === 't-addmatch') {
       openAddMatch(t.getAttribute('data-tid'));
     } else if (act === 't-qr') {
@@ -1302,7 +1314,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     });
   }
   function resetTeamState() {
-    state.team = null; state.claims = {}; state.claimsReady = false; state.isCaptain = false; state.isSuper = false;
+    state.team = null; state.claims = {}; state.claimsReady = false; state.isCaptain = false; state.isSuper = false; state.viewTeam = null;
     state.matches = []; state.answers = {}; state.codes = null; PLAYERS = []; TEAM = ''; MIN = 4;
     applyTheme();
   }
@@ -1310,20 +1322,23 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     return Promise.all([run(sb.from('members').select('*')), run(sb.from('teams').select('*')), run(sb.from('super_admins').select('user_id'))]).then(function (r) {
       var mine = r[0].data.filter(function (v) { return v.user_id === state.uid; })[0];
       state.isSuper = r[2].data.length > 0;
-      if (!mine) {
+      if (!state.isSuper) state.viewTeam = null;
+      var vt = state.viewTeam || null;           /* beheerder van de hele app bekijkt een ander team */
+      if (!mine && !vt) {
         resetTeamState(); state.isSuper = r[2].data.length > 0;
         state.claimsReady = true; state.dbState = 'ok'; state.canWrite = true;
         render(); if (state.isSuper) loadTeams();
         return;
       }
-      state.team = r[1].data.filter(function (t) { return t.id === mine.team_id; })[0] || null;
+      var tid = vt || mine.team_id;
+      state.team = r[1].data.filter(function (t) { return t.id === tid; })[0] || null;
       TEAM = state.team ? state.team.name : ''; MIN = state.team ? state.team.min_players : 4;
       applyTheme();
       var c = {};
-      r[0].data.forEach(function (v) { if (v.team_id === mine.team_id) c[v.user_id] = { p: v.player_id, a: !!v.is_admin }; });
-      state.claims = c; state.isCaptain = !!mine.is_admin; state.claimsReady = true;
-      var q = [run(sb.from('matches').select('*')), run(sb.from('players').select('*')), run(sb.from('answers').select('*'))];
-      if (state.isCaptain) q.push(run(sb.from('team_codes').select('*').eq('team_id', mine.team_id)));
+      r[0].data.forEach(function (v) { if (v.team_id === tid) c[v.user_id] = { p: v.player_id, a: !!v.is_admin }; });
+      state.claims = c; state.isCaptain = vt ? false : !!mine.is_admin; state.claimsReady = true;
+      var q = [run(sb.from('matches').select('*').eq('team_id', tid)), run(sb.from('players').select('*').eq('team_id', tid)), run(sb.from('answers').select('*').eq('team_id', tid))];
+      if (state.isCaptain) q.push(run(sb.from('team_codes').select('*').eq('team_id', tid)));
       return Promise.all(q).then(function (x) {
         state.matches = x[0].data.map(function (v) { return { id: v.id, start: new Date(v.start).toISOString().replace('.000Z', 'Z'), opp: v.opp || '', home: v.home, loc: v.loc || '' }; }).sort(byStart);
         var pl = x[1].data.map(function (v) { return { id: v.id, name: v.name, short: v.short || v.name.split(' ')[0], role: v.role || '', order: v.sort || 99 }; });
@@ -1382,7 +1397,8 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     $('teamlist').innerHTML = (state.teams || []).map(function (t) {
       return '<li class="teamitem' + (t.active ? '' : ' off') + '"><div class="th"><span class="huedot" style="width:18px;height:18px;background:' + hueColor(t.hue) + '"></span><strong class="tn">' + esc(t.name) + '</strong><span class="note">' + t.members + ' leden' + (t.active ? '' : ' · uit') + '</span></div>' +
         '<div class="tcodes">Teamcode: <b>' + esc(t.join_code || '') + '</b>' + (t.captain_code ? '<br>Code voor beheerder: <b>' + esc(t.captain_code) + '</b>' : '<br>Beheerder is aangesloten') + '</div>' +
-        '<div class="tacts"><button class="linkbtn" data-act="t-rename" data-tid="' + t.id + '">Naam wijzigen</button>' +
+        '<div class="tacts"><button class="linkbtn" data-act="t-view" data-tid="' + t.id + '">Bekijk team</button>' +
+        '<button class="linkbtn" data-act="t-rename" data-tid="' + t.id + '">Naam wijzigen</button>' +
         '<button class="linkbtn" data-act="t-qr" data-tid="' + t.id + '">QR beheerder</button>' +
         '<label class="linkbtn filebtn">Wedstrijden inladen<input type="file" accept=".ics,text/calendar" data-ics="' + t.id + '" hidden></label>' +
         '<button class="linkbtn" data-act="t-addmatch" data-tid="' + t.id + '">Wedstrijd toevoegen</button>' +
