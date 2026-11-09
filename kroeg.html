@@ -144,6 +144,7 @@ details[open] .chev { transform: rotate(90deg); }
     <div class="acts">
       <a class="ibtn" id="switchapp" href="index.html" hidden>Wie gooit er mee?</a>
       <button class="ibtn" id="bell" type="button" hidden aria-pressed="false">Meldingen</button>
+      <button class="ibtn" id="testalert" type="button" hidden>Testmelding wijzigingen</button>
       <button class="ibtn" id="logout" type="button" hidden>Uitloggen</button>
     </div>
   </div>
@@ -238,10 +239,10 @@ details[open] .chev { transform: rotate(90deg); }
   var SWITCH_MAILS = (window.WISSEL_MAILS || []).map(function (m) { return String(m).toLowerCase(); });
   function checkSwitch() {
     if (!sb || !S.uid || S.switchFor === S.uid) return;
-    S.switchFor = S.uid; S.canSwitch = SWITCH_MAILS.indexOf((S.email || '').toLowerCase()) > -1;
+    S.switchFor = S.uid; S.isSuper = false; S.canSwitch = SWITCH_MAILS.indexOf((S.email || '').toLowerCase()) > -1;
     var uid = S.uid;
     sb.from('super_admins').select('user_id').then(function (r) {
-      if (uid === S.uid && r.data && r.data.length > 0) { S.canSwitch = true; render(); }
+      if (uid === S.uid && r.data && r.data.length > 0) { S.canSwitch = true; S.isSuper = true; render(); }
     }, function () {});
   }
   function load() {
@@ -262,6 +263,7 @@ details[open] .chev { transform: rotate(90deg); }
     main.textContent = '';
     $('logout').hidden = !S.uid;
     $('switchapp').hidden = !(S.uid && S.canSwitch);
+    $('testalert').hidden = !(S.uid && S.isSuper);
     $('bell').hidden = !(S.uid && S.state === 'ready');
     $('bell').setAttribute('aria-pressed', S.push ? 'true' : 'false');
     $('bell').textContent = S.push ? 'Meldingen aan' : 'Meldingen aanzetten';
@@ -476,6 +478,15 @@ details[open] .chev { transform: rotate(90deg); }
 
   /* ---------- start ---------- */
   $('bell').addEventListener('click', togglePush);
+  $('testalert').addEventListener('click', function () {
+    var b = $('testalert'); b.disabled = true;
+    sb.functions.invoke('venue-alert', { body: { test: true } }).then(function (r) {
+      b.disabled = false;
+      if (r.error) toast('Testmelding mislukt.');
+      else if (r.data && r.data.sent === 0) toast('Er is geen toestel van jou aangemeld voor meldingen. Zet eerst "Meldingen aanzetten" aan.');
+      else toast('Testmelding verstuurd.');
+    }, function () { b.disabled = false; toast('Testmelding mislukt.'); });
+  });
   $('logout').addEventListener('click', function () { if (sb) sb.auth.signOut(); });
   render();
   if (!CFG.SUPABASE_URL || /JOUW/.test(CFG.SUPABASE_URL)) return;
