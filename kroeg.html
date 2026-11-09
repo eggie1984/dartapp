@@ -53,6 +53,8 @@ header {
   appearance: none; border: 1px solid rgba(255,255,255,.4); background: transparent; color: inherit;
   border-radius: 999px; padding: 8px 14px; font: 600 14px var(--font-body); min-height: 40px; cursor: pointer;
 }
+a.ibtn { text-decoration: none; display: inline-flex; align-items: center; }
+.ibtn[hidden] { display: none; }
 .ibtn[aria-pressed="true"] { background: rgba(255,255,255,.18); }
 main { max-width: 720px; margin: 0 auto; padding: 16px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
@@ -131,6 +133,7 @@ details[open] .chev { transform: rotate(90deg); }
 <header>
   <div class="bar">
     <h1>Thuiswedstrijden<small id="sub">Alleen kijken</small></h1>
+    <a class="ibtn" id="switchapp" href="index.html" hidden>Wie gooit er mee?</a>
     <button class="ibtn" id="bell" type="button" hidden aria-pressed="false">Meldingen</button>
     <button class="ibtn" id="logout" type="button" hidden>Uitloggen</button>
   </div>
@@ -212,8 +215,18 @@ details[open] .chev { transform: rotate(90deg); }
   var KIND = { added: 'Nieuw', changed: 'Verzet', removed: 'Vervalt' };
 
   /* ---------- laden ---------- */
+  var SWITCH_MAILS = ['s.sluys@hotmail.com'];
+  function checkSwitch() {
+    if (!sb || !S.uid || S.switchFor === S.uid) return;
+    S.switchFor = S.uid; S.canSwitch = SWITCH_MAILS.indexOf((S.email || '').toLowerCase()) > -1;
+    var uid = S.uid;
+    sb.from('super_admins').select('user_id').then(function (r) {
+      if (uid === S.uid && r.data && r.data.length > 0) { S.canSwitch = true; render(); }
+    }, function () {});
+  }
   function load() {
     if (!sb || !S.uid) return;
+    checkSwitch();
     sb.rpc('venue_overview').then(function (r) {
       if (r.error) {
         if (/Geen toegang/i.test(r.error.message || '')) { S.state = 'noaccess'; S.err = ''; }
@@ -228,6 +241,7 @@ details[open] .chev { transform: rotate(90deg); }
     var main = $('main');
     main.textContent = '';
     $('logout').hidden = !S.uid;
+    $('switchapp').hidden = !(S.uid && S.canSwitch);
     $('bell').hidden = !(S.uid && S.state === 'ready');
     $('bell').setAttribute('aria-pressed', S.push ? 'true' : 'false');
     $('bell').textContent = S.push ? 'Meldingen aan' : 'Meldingen aanzetten';
@@ -394,7 +408,7 @@ details[open] .chev { transform: rotate(90deg); }
   sb.auth.onAuthStateChange(function (ev, session) {
     var id = session ? session.user.id : null;
     if (id && id === S.uid) return;
-    S.uid = id; S.email = session ? session.user.email : '';
+    S.uid = id; S.email = session ? session.user.email : ''; S.canSwitch = false; S.switchFor = null;
     if (id) { S.state = 'start'; S.data = null; render(); setTimeout(function () { load(); checkPush(); }, 0); }
     else { S.state = 'start'; S.data = null; S.push = false; S.loaded = null; render(); }
   });

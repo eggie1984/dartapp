@@ -229,6 +229,9 @@ main { padding-top: 18px; display: flex; flex-direction: column; gap: 16px; }
 .invite-url { align-self: center; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; text-align: center; }
 .invite-text { width: 100%; min-height: 190px; font: inherit; font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); resize: vertical; box-sizing: border-box; }
 .invite-acts { display: flex; flex-wrap: wrap; gap: 10px; }
+.switchlink { margin-left: auto; flex: none; border: 1px solid rgba(255,255,255,.4); color: var(--brand-ink); border-radius: 999px; padding: 8px 14px; font: 600 14px var(--font-body); text-decoration: none; white-space: nowrap; }
+.switchlink[hidden] { display: none; }
+.switchlink + .bell { margin-left: 0; }
 .bell { position: relative; margin-left: auto; flex: none; width: 46px; height: 46px; border-radius: 50%; border: 0; background: rgba(255,255,255,.14); color: var(--brand-ink); display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .bell[hidden] { display: none; }
 .bell svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -296,6 +299,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     <h1 id="teamname">Wie gooit er mee?</h1>
     <p class="sub" id="season">Wie gooit er mee? Seizoen 2026-2027</p>
   </div>
+  <a class="switchlink" id="switchapp" href="kroeg.html" hidden>Thuiswedstrijden</a>
   <button type="button" class="bell" id="bell" hidden aria-label="Berichten"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><span class="badge" id="bellbadge" hidden></span></button>
 </div></div>
 <dialog class="inbox" id="inbox" aria-labelledby="inboxtitle">
@@ -1076,7 +1080,13 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     return mo >= 7 ? y + '-' + (y + 1) : (y - 1) + '-' + y;
   }
 
+  var SWITCH_MAILS = ['s.sluys@hotmail.com'];
+  function updateSwitch() {
+    var a = $('switchapp'); if (!a) return;
+    a.hidden = !(state.uid && (state.isSuper || SWITCH_MAILS.indexOf((state.email || '').toLowerCase()) > -1));
+  }
   function render() {
+    updateSwitch();
     var ae = document.activeElement, fk = ae && ae.dataset ? ae.dataset.fk : null;
     $('season').textContent = state.team ? 'Wie gooit er mee? Seizoen ' + seasonLabel() : 'Voor darts-teams';
     $('teamname').textContent = state.team ? state.team.name : 'Wie gooit er mee?';
@@ -1449,7 +1459,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     sb.auth.onAuthStateChange(function (ev, session) {
       var id = session ? session.user.id : null;
       if (id && id === state.uid) return;
-      state.uid = id;
+      state.uid = id; state.email = session ? (session.user.email || '') : '';
       if (id) {
         state.dbState = 'pending'; render();
         setTimeout(function () { loadAll(); checkPush(); }, 0);
