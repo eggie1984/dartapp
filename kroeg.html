@@ -479,12 +479,13 @@ details[open] .chev { transform: rotate(90deg); }
   /* ---------- start ---------- */
   $('bell').addEventListener('click', togglePush);
   $('testalert').addEventListener('click', function () {
+    var all = window.confirm('Testmelding sturen.\n\nOK = ook naar de kastelein(s)\nAnnuleren = alleen naar mij');
     var b = $('testalert'); b.disabled = true;
-    sb.functions.invoke('venue-alert', { body: { test: true } }).then(function (r) {
+    sb.functions.invoke('venue-alert', { body: { test: true, all: all } }).then(function (r) {
       b.disabled = false;
       if (r.error) toast('Testmelding mislukt.');
       else if (r.data && r.data.sent === 0) toast('Er is geen toestel van jou aangemeld voor meldingen. Zet eerst "Meldingen aanzetten" aan.');
-      else toast('Testmelding verstuurd.');
+      else toast(all ? 'Testmelding verstuurd naar ' + r.data.sent + ' toestel(len), kastelein(s) inbegrepen.' : 'Testmelding verstuurd.');
     }, function () { b.disabled = false; toast('Testmelding mislukt.'); });
   });
   $('logout').addEventListener('click', function () { if (sb) sb.auth.signOut(); });
