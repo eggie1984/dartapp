@@ -149,6 +149,7 @@ details[open] .chev { transform: rotate(90deg); }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
+<script src="wissel.js"></script>
 <script>
 (function () {
   'use strict';
@@ -215,7 +216,7 @@ details[open] .chev { transform: rotate(90deg); }
   var KIND = { added: 'Nieuw', changed: 'Verzet', removed: 'Vervalt' };
 
   /* ---------- laden ---------- */
-  var SWITCH_MAILS = ['s.sluys@hotmail.com'];
+  var SWITCH_MAILS = (window.WISSEL_MAILS || []).map(function (m) { return String(m).toLowerCase(); });
   function checkSwitch() {
     if (!sb || !S.uid || S.switchFor === S.uid) return;
     S.switchFor = S.uid; S.canSwitch = SWITCH_MAILS.indexOf((S.email || '').toLowerCase()) > -1;

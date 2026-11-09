@@ -483,6 +483,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
+<script src="wissel.js"></script>
 <script>
 (function () {
   'use strict';
@@ -1080,7 +1081,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     return mo >= 7 ? y + '-' + (y + 1) : (y - 1) + '-' + y;
   }
 
-  var SWITCH_MAILS = ['s.sluys@hotmail.com'];
+  var SWITCH_MAILS = (window.WISSEL_MAILS || []).map(function (m) { return String(m).toLowerCase(); });
   function updateSwitch() {
     var a = $('switchapp'); if (!a) return;
     a.hidden = !(state.uid && (state.isSuper || SWITCH_MAILS.indexOf((state.email || '').toLowerCase()) > -1));
