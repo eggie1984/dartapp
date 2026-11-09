@@ -115,6 +115,14 @@ details[open] .chev { transform: rotate(90deg); }
 .pill.no { background: var(--no-bg); color: var(--no); text-decoration: line-through; }
 .banner { background: var(--no-bg); color: var(--no); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-weight: 600; }
 .hint { background: var(--surface-2); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-size: 14px; }
+.dlwrap { max-width: 720px; margin: 0 auto; padding: 16px 16px 0; }
+.dl { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
+.dl p { margin: 0; flex: 1 1 200px; font-size: 14px; color: var(--ink-2); }
+.dl p strong { display: block; font-size: 16px; color: var(--ink); }
+.dl .dlacts { display: flex; align-items: center; gap: 4px; }
+.dlbtn { appearance: none; border: 0; background: var(--brand); color: var(--brand-ink); border-radius: 10px; padding: 10px 16px; font: 700 15px var(--font-body); min-height: 44px; cursor: pointer; }
+.dlx { appearance: none; border: 0; background: none; color: var(--ink-2); padding: 10px 8px; font: 500 14px var(--font-body); min-height: 44px; cursor: pointer; text-decoration: underline; }
+.dl .dlhelp { flex-basis: 100%; color: var(--ink); }
 [hidden] { display: none !important; }
 @media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
 </style>
@@ -127,6 +135,13 @@ details[open] .chev { transform: rotate(90deg); }
     <button class="ibtn" id="logout" type="button" hidden>Uitloggen</button>
   </div>
 </header>
+<div class="dlwrap" id="dlapp" hidden>
+  <div class="dl">
+    <p><strong>Download de app</strong>Zet Thuiswedstrijden op je telefoon, dan open je hem met één tik.</p>
+    <div class="dlacts"><button type="button" class="dlbtn" id="dlgo">App downloaden</button><button type="button" class="dlx" id="dlno">Niet nu</button></div>
+    <p class="dlhelp" id="dlhelp" hidden></p>
+  </div>
+</div>
 <main id="main"><p class="muted">Laden…</p></main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
@@ -385,6 +400,35 @@ details[open] .chev { transform: rotate(90deg); }
   });
   document.addEventListener('visibilitychange', function () { if (!document.hidden && S.uid) load(); });
   timer = setInterval(function () { if (!document.hidden && S.uid && S.state === 'ready') load(); }, 60000);
+})();
+</script>
+<script>
+/* knop "App downloaden" */
+(function () {
+  var box = document.getElementById('dlapp'), go = document.getElementById('dlgo'), no = document.getElementById('dlno'), help = document.getElementById('dlhelp');
+  var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var deferred = null, dismissed = false;
+  try { dismissed = sessionStorage.getItem('kroeg-dl-dicht') === '1'; } catch (e) {}
+  if (standalone || dismissed) return;            /* al geïnstalleerd of net weggeklikt */
+  box.hidden = false;
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; });
+  window.addEventListener('appinstalled', function () { box.hidden = true; });
+  go.addEventListener('click', function () {
+    if (deferred) {
+      deferred.prompt();
+      deferred.userChoice.then(function () { deferred = null; box.hidden = true; }, function () {});
+      return;
+    }
+    help.textContent = ios
+      ? 'Tik onderin op het deel-icoon en kies "Zet op beginscherm".'
+      : 'Tik rechtsboven op de drie puntjes en kies "App installeren" (of "Toevoegen aan startscherm").';
+    help.hidden = false;
+  });
+  no.addEventListener('click', function () {
+    box.hidden = true;
+    try { sessionStorage.setItem('kroeg-dl-dicht', '1'); } catch (e) {}
+  });
 })();
 </script>
 </body>
