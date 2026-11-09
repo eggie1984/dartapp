@@ -306,6 +306,20 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   <div class="inbox-head"><h2 id="inboxtitle">Berichten</h2><button type="button" class="linkbtn" id="inboxclose">Sluiten</button></div>
   <ul id="inboxlist"></ul>
 </dialog>
+<dialog class="inbox" id="amdlg" aria-labelledby="amtitle">
+  <div class="inbox-head"><h2 id="amtitle">Wedstrijd toevoegen</h2><button type="button" class="linkbtn" id="amclose">Sluiten</button></div>
+  <form id="amform" class="addform" style="padding:14px 18px 18px;overflow-y:auto">
+    <label for="amdate">Datum en tijd</label>
+    <input type="datetime-local" id="amdate" required>
+    <label for="amopp">Tegenstander</label>
+    <input type="text" id="amopp" maxlength="80" autocomplete="off" placeholder="Nog niet bekend">
+    <label for="amhome">Thuis of uit</label>
+    <select id="amhome"><option value="">Nog onbekend</option><option value="1">Thuis</option><option value="0">Uit</option></select>
+    <label for="amloc">Locatie</label>
+    <input type="text" id="amloc" maxlength="200" autocomplete="off" placeholder="Café, straat 1, plaats">
+    <div class="acts"><button class="btn" type="submit">Wedstrijd toevoegen</button></div>
+  </form>
+</dialog>
 
 <main class="in">
   <p class="note" id="note" hidden></p>
@@ -1148,6 +1162,8 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
       unclaim(state.uid);
     } else if (act === 't-join' || act === 't-cap') {
       run(sb.rpc('reset_code', { p_team: t.getAttribute('data-tid'), p_which: act === 't-join' ? 'join' : 'captain' })).then(function () { toast('Nieuwe code gemaakt.'); loadTeams(); }).catch(rpcFail);
+    } else if (act === 't-addmatch') {
+      openAddMatch(t.getAttribute('data-tid'));
     } else if (act === 't-qr') {
       toggleTeamQr(t.getAttribute('data-tid'));
     } else if (act === 't-rename') {
@@ -1369,6 +1385,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
         '<div class="tacts"><button class="linkbtn" data-act="t-rename" data-tid="' + t.id + '">Naam wijzigen</button>' +
         '<button class="linkbtn" data-act="t-qr" data-tid="' + t.id + '">QR beheerder</button>' +
         '<label class="linkbtn filebtn">Wedstrijden inladen<input type="file" accept=".ics,text/calendar" data-ics="' + t.id + '" hidden></label>' +
+        '<button class="linkbtn" data-act="t-addmatch" data-tid="' + t.id + '">Wedstrijd toevoegen</button>' +
         '<button class="linkbtn" data-act="t-join" data-tid="' + t.id + '">Nieuwe teamcode</button>' +
         '<button class="linkbtn" data-act="t-cap" data-tid="' + t.id + '">Nieuwe beheerderscode</button>' +
         '<button class="linkbtn" data-act="t-active" data-tid="' + t.id + '" data-v="' + (t.active ? '0' : '1') + '">' + (t.active ? 'Zet uit' : 'Zet aan') + '</button>' +
@@ -1413,6 +1430,33 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     var inp = ev.target; if (!inp || !inp.getAttribute) return;
     var tid = inp.getAttribute('data-ics');
     if (tid && inp.files && inp.files[0]) { importIcsForTeam(tid, inp.files[0]); inp.value = ''; }
+  });
+  /* beheerder van de hele app: losse wedstrijd toevoegen voor een team */
+  var amTeam = null;
+  function openAddMatch(tid) {
+    var tm = teamById(tid); if (!tm) return;
+    amTeam = tm.id;
+    $('amform').reset();
+    $('amtitle').textContent = 'Wedstrijd toevoegen \u00B7 ' + tm.name;
+    var d = $('amdlg');
+    if (!d.open) { if (d.showModal) d.showModal(); else d.setAttribute('open', ''); }
+  }
+  $('amclose').addEventListener('click', function () { $('amdlg').close(); });
+  $('amdlg').addEventListener('click', function (ev) { if (ev.target === $('amdlg')) $('amdlg').close(); });
+  $('amform').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var tm = teamById(amTeam);
+    if (!sb || !state.isSuper || !tm) return;
+    var start = fromLocalInput($('amdate').value);
+    if (!start) { toast('Kies een datum en tijd.'); return; }
+    var h = $('amhome').value;
+    var rec = { id: 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), team_id: tm.id, start: start,
+      opp: $('amopp').value.trim(), home: h === '' ? null : h === '1', loc: $('amloc').value.trim() };
+    run(sb.from('matches').insert(rec)).then(function () {
+      toast(tm.name + ': wedstrijd toegevoegd.' + (oppKnown(rec.opp) ? '' : ' Hij staat pas in de lijst als er een tegenstander is ingevuld.'));
+      $('amdlg').close();
+      return loadAll();
+    }).catch(writeFail);
   });
   function teamById(id) { return (state.teams || []).filter(function (t) { return t.id === id; })[0]; }
   function showNewTeam(name, j, c) {
