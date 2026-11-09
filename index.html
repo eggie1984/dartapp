@@ -477,6 +477,20 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     </div>
   </details>
 
+  <details class="panel" id="kasteleinbox" hidden>
+    <summary>Kastelein: Thuiswedstrijden installeren</summary>
+    <div class="body">
+      <p>Voor een kastelein die zelf niet darts. Hij scant deze code met de camera van zijn telefoon en tikt op de knop <strong>App downloaden</strong>. Dan staat alleen Thuiswedstrijden op zijn telefoon, zonder deze app.</p>
+      <div class="qrbox" id="kqr"></div>
+      <div class="invite-url" id="kurl"></div>
+      <textarea id="ktext" class="invite-text" readonly></textarea>
+      <div class="invite-acts">
+        <button type="button" class="btn small" id="kshare" hidden>Delen</button>
+        <button type="button" class="btn small" id="kcopy">Tekst kopiëren</button>
+      </div>
+    </div>
+  </details>
+
 </main>
 
 <div id="toast" role="status" aria-live="polite"><span id="toasttext"></span></div>
@@ -1339,6 +1353,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   }
   function renderSuper() {
     $('superbox').hidden = !state.isSuper;
+    if ($('kasteleinbox')) $('kasteleinbox').hidden = !state.isSuper;
     if (!state.isSuper) return;
     $('teamlist').innerHTML = (state.teams || []).map(function (t) {
       return '<li class="teamitem' + (t.active ? '' : ' off') + '"><div class="th"><span class="huedot" style="width:18px;height:18px;background:' + hueColor(t.hue) + '"></span><strong class="tn">' + esc(t.name) + '</strong><span class="note">' + t.members + ' leden' + (t.active ? '' : ' · uit') + '</span></div>' +
@@ -2698,6 +2713,28 @@ return R("index");})();
       "4. Tik op \"Meldingen aanzetten\". Dan krijg je een herinnering voor de wedstrijd en ook de wijzigingen en berichten van de captain.";
     $('invitetext').value = msg;
   };
+  /* ---------- kastelein: alleen Thuiswedstrijden installeren ---------- */
+  (function () {
+    var link = url + 'kroeg.html?installeren=1';
+    try { $('kqr').innerHTML = qrSvg(link); } catch (e) { $('kqr').textContent = link; }
+    $('kurl').textContent = link;
+    var ktxt = "Hoi! Hier kun je de app Thuiswedstrijden op je telefoon zetten.\n\n" +
+      "1. Open deze link:\n" + link + "\n\n" +
+      "2. Tik op de knop \"App downloaden\" en bevestig.\n" +
+      "- iPhone (Safari): tik op het deel-icoon en dan \"Zet op beginscherm\".\n\n" +
+      "3. Open de app vanaf je beginscherm en log in met het account dat je hebt gekregen.";
+    $('ktext').value = ktxt;
+    if (navigator.share) {
+      $('kshare').hidden = false;
+      $('kshare').addEventListener('click', function () { navigator.share({ title: 'Thuiswedstrijden', text: ktxt }).catch(function () {}); });
+    }
+    $('kcopy').addEventListener('click', function () {
+      var b = this, ta = $('ktext');
+      function ok() { var o = b.textContent; b.textContent = 'Gekopieerd \u2713'; setTimeout(function () { b.textContent = o; }, 1800); }
+      function fb() { ta.focus(); ta.select(); try { document.execCommand('copy'); ok(); } catch (e) {} }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ktxt).then(ok, fb); else fb();
+    });
+  })();
   if (navigator.share) {
     $('invshare').hidden = false;
     $('invshare').addEventListener('click', function () {

@@ -140,7 +140,7 @@ details[open] .chev { transform: rotate(90deg); }
 </header>
 <div class="dlwrap" id="dlapp" hidden>
   <div class="dl">
-    <p><strong>Download de app</strong>Zet Thuiswedstrijden op je telefoon, dan open je hem met één tik.</p>
+    <p><strong id="dltitle">Download de app</strong><span id="dltext">Zet Thuiswedstrijden op je telefoon, dan open je hem met één tik.</span></p>
     <div class="dlacts"><button type="button" class="dlbtn" id="dlgo">App downloaden</button><button type="button" class="dlx" id="dlno">Niet nu</button></div>
     <p class="dlhelp" id="dlhelp" hidden></p>
   </div>
@@ -427,6 +427,12 @@ details[open] .chev { transform: rotate(90deg); }
   try { dismissed = sessionStorage.getItem('kroeg-dl-dicht') === '1'; } catch (e) {}
   if (standalone || dismissed) return;            /* al geïnstalleerd of net weggeklikt */
   if (ios) box.hidden = false;                    /* iPhone: altijd tonen, daar is er geen install-event */
+  if (/[?&]installeren=1/.test(location.search)) { /* vanaf de QR-code van de beheerder: altijd tonen */
+    box.hidden = false;
+    document.getElementById('dltitle').textContent = 'Welkom! Installeer Thuiswedstrijden';
+    document.getElementById('dltext').textContent = 'Tik op de knop hieronder en bevestig. Dan staat de app op je telefoon.';
+    no.hidden = true;
+  }
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; box.hidden = false; });
   window.addEventListener('appinstalled', function () { box.hidden = true; });
   go.addEventListener('click', function () {
