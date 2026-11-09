@@ -696,9 +696,15 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     el.innerHTML = h;
   }
 
+  /* Tegenstander telt als onbekend als hij leeg is of een tijdelijke tekst bevat (onbekend, vrije week, ntb, ...) */
+  function oppKnown(o) {
+    o = String(o || '').trim();
+    return !!o && !/^(onbekend|nog onbekend|nog niet bekend|niet bekend|ntb|n\.t\.b\.?|vrij|vrije week|bye|-+|\?+)$/i.test(o);
+  }
   function split() {
     var now = Date.now(), up = [], past = [];
     state.matches.slice().sort(byStart).forEach(function (m) {
+      if (!oppKnown(m.opp)) return; /* geen tegenstander (vrije week): niet tonen, de captain ziet hem wel onder beheer */
       (Date.parse(m.start) + 3 * 3600e3 < now ? past : up).push(m);
     });
     past.reverse();
@@ -1041,13 +1047,15 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     var isNew = !state.editMatch;
     var rec = { id: state.editMatch || ('m' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)), team_id: state.team.id, start: start,
       opp: $('mopp').value.trim(), home: h === '' ? null : h === '1', loc: $('mloc').value.trim() };
-    var notify = $('mnotify').checked;
+    var before = null; state.matches.forEach(function (x) { if (x.id === rec.id) before = x; });
+    var nowKnown = oppKnown(rec.opp) && !(before && oppKnown(before.opp)); /* tegenstander net bekend geworden */
+    var notify = $('mnotify').checked || nowKnown;
     run(sb.from('matches').upsert(rec)).then(function () {
       toast(isNew ? 'Wedstrijd toegevoegd.' : 'Wijziging opgeslagen.');
       resetMatchForm(); $('mnotify').checked = false;
       if (notify) {
         var body = matchWhen(rec.start) + (rec.opp ? ' tegen ' + rec.opp : '') + (rec.home === true ? ' (thuis)' : rec.home === false ? ' (uit)' : '');
-        return sendMessage(isNew ? 'Nieuwe wedstrijd' : 'Wedstrijd gewijzigd', body).catch(function () { toast('Opgeslagen, maar de melding is niet verstuurd.'); });
+        return sendMessage(nowKnown ? 'Wedstrijd bekend' : isNew ? 'Nieuwe wedstrijd' : 'Wedstrijd gewijzigd', body).catch(function () { toast('Opgeslagen, maar de melding is niet verstuurd.'); });
       }
     }).then(loadAll).catch(writeFail);
   }

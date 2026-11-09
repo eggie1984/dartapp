@@ -190,6 +190,12 @@ details[open] .chev { transform: rotate(90deg); }
   function hueColor(h) { return h === null || h === undefined ? '#2F8F5B' : 'hsl(' + h + ' 55% 45%)'; }
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
 
+  /* Tegenstander telt als onbekend als hij leeg is of een tijdelijke tekst bevat (onbekend, vrije week, ntb, ...) */
+  function oppKnown(o) {
+    o = String(o || '').trim();
+    return !!o && !/^(onbekend|nog onbekend|nog niet bekend|niet bekend|ntb|n\.t\.b\.?|vrij|vrije week|bye|-+|\?+)$/i.test(o);
+  }
+
   /* ---------- wijzigingen samenvoegen (zelfde regel als de melding) ---------- */
   function collapse(rows) {
     var by = {}, order = [];
@@ -202,7 +208,10 @@ details[open] .chev { transform: rotate(90deg); }
       var l = by[id], f = l[0], z = l[l.length - 1], o = f.old_start, n = z.new_start;
       if (!o && !n) return;
       if (o && n && Date.parse(o) === Date.parse(n) && (f.old_loc || '') === (z.new_loc || '')) return;
-      out.push({ kind: !o ? 'added' : !n ? 'removed' : 'changed', team: z.team_name || f.team_name || 'Team', opp: z.opp || f.opp || 'tegenstander onbekend',
+      var opp = z.opp || f.opp;
+      if (!oppKnown(opp)) return; /* tegenstander nog onbekend: nog niet tonen */
+      if (n && o && !oppKnown(f.opp)) o = null; /* de kastelein zag de oude datum nooit: dit is voor hem een nieuwe wedstrijd */
+      out.push({ kind: !o ? 'added' : !n ? 'removed' : 'changed', team: z.team_name || f.team_name || 'Team', opp: opp,
         old_start: o, new_start: n, at: z.created_at });
     });
     return out.sort(function (a, b) { return Date.parse(b.at) - Date.parse(a.at); });
@@ -264,7 +273,8 @@ details[open] .chev { transform: rotate(90deg); }
 
     main.appendChild(changesView());
 
-    var matches = S.data.matches || [];
+    /* wedstrijden zonder bekende tegenstander blijven verborgen tot die is ingevuld */
+    var matches = (S.data.matches || []).filter(function (m) { return oppKnown(m.opp); });
     var teams = {};
     matches.forEach(function (m) { teams[m.team_id] = { name: m.team_name, hue: m.hue }; });
     var ids = Object.keys(teams);
