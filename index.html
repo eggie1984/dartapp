@@ -610,7 +610,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   function whereLine(m) {
     var p = locParts(m);
     if (!p.length) return 'Locatie nog niet bekend';
-    return p.length > 1 ? p[0] + ' · ' + p[p.length - 1] : p[0];
+    return 'Locatie: ' + (p.length > 1 ? p[0] + ' · ' + p[p.length - 1] : p[0]);
   }
 
   /* who is who: an account id is tied to one player name */
