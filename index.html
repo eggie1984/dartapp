@@ -329,16 +329,16 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
 </dialog>
 
 <dialog class="inbox" id="reqdlg" aria-labelledby="reqtitle">
-  <div class="inbox-head"><h2 id="reqtitle">Vraag om extra speler</h2><button type="button" class="linkbtn" id="reqclose">Sluiten</button></div>
+  <div class="inbox-head"><h2 id="reqtitle">Stuur de captain een bericht</h2><button type="button" class="linkbtn" id="reqclose">Sluiten</button></div>
   <form id="reqform" class="addform" style="padding:14px 18px 18px;overflow-y:auto">
     <p>Aan de captain(s) van <strong id="reqto"></strong>. Zij zien je bericht onder het belletje.</p>
     <label for="reqbody">Bericht</label>
-    <textarea id="reqbody" rows="4" maxlength="300" required></textarea>
+    <textarea id="reqbody" rows="4" maxlength="300" placeholder="Schrijf je bericht" required></textarea>
     <div class="acts"><button class="btn" type="submit" id="reqsend">Versturen</button></div>
   </form>
 </dialog>
 
-<div class="viewbar" id="viewbar" hidden><span>Je bekijkt <b id="viewname"></b> (alleen kijken)</span><span class="vb"><button type="button" class="linkbtn" id="vbreq" data-act="req-open" data-tid="" hidden>Vraag om extra speler</button><button type="button" class="linkbtn" data-act="t-back">Terug naar mijn team</button></span></div>
+<div class="viewbar" id="viewbar" hidden><span>Je bekijkt <b id="viewname"></b> (alleen kijken)</span><span class="vb"><button type="button" class="linkbtn" id="vbreq" data-act="req-open" data-tid="" hidden>Stuur de captain een bericht</button><button type="button" class="linkbtn" data-act="t-back">Terug naar mijn team</button></span></div>
 <main class="in">
   <p class="note" id="note" hidden></p>
   <div class="installbar" id="installbar" hidden>
@@ -961,7 +961,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     var me = myPlayerId();
     var l = state.messages.filter(function (m) { return !state.hidden[m.id] && (!m.to_players || (me && m.to_players.indexOf(me) >= 0)); });
     var q = (state.requests || []).map(function (r) {
-      return { id: 'r:' + r.id, title: 'Vraag van ' + r.from_team_name, body: (r.from_name ? r.from_name + ': ' : '') + r.body, created_at: r.created_at, req: r };
+      return { id: 'r:' + r.id, title: 'Bericht van ' + r.from_team_name, body: (r.from_name ? r.from_name + ': ' : '') + r.body, created_at: r.created_at, req: r };
     }).filter(function (m) { return !state.hidden[m.id]; });
     return l.concat(q).sort(function (a, b) { return Date.parse(b.created_at) - Date.parse(a.created_at); });
   }
@@ -1185,7 +1185,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     state.otherTeams.filter(function (t) { return !q || t.name.toLowerCase().indexOf(q) >= 0; }).forEach(function (t) {
       h += '<li class="teamitem"><div class="th"><span class="huedot" style="width:18px;height:18px;background:' + hueColor(t.hue) + '"></span><strong class="tn">' + esc(t.name) + '</strong></div>' +
         '<div class="tacts"><button type="button" class="linkbtn" data-act="t-view" data-tid="' + esc(t.id) + '">Bekijk team</button>' +
-        (state.myAdmin ? '<button type="button" class="linkbtn" data-act="req-open" data-tid="' + esc(t.id) + '" data-tname="' + esc(t.name) + '">Vraag om extra speler</button>' : '') + '</div></li>';
+        (state.myAdmin ? '<button type="button" class="linkbtn" data-act="req-open" data-tid="' + esc(t.id) + '" data-tname="' + esc(t.name) + '">Stuur de captain een bericht</button>' : '') + '</div></li>';
     });
     if (q.length >= 2) state.playerHits.forEach(function (p) {
       var t = otherTeamById(p.team_id); if (!t) return;
@@ -1211,7 +1211,6 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     var tm = otherTeamById(tid);
     state.reqTo = tid;
     $('reqto').textContent = name || (tm ? tm.name : 'het team');
-    if (!$('reqbody').value.trim()) $('reqbody').value = 'Hoi! Wij zoeken een extra speler voor een wedstrijd. Hebben jullie iemand beschikbaar?';
     var d = $('reqdlg');
     if (!d.open) { if (d.showModal) d.showModal(); else d.setAttribute('open', ''); }
   }
