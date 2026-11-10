@@ -186,6 +186,10 @@ main { padding-top: 18px; display: flex; flex-direction: column; gap: 16px; }
 .viewbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 16px; background: #7A5A00; color: #fff; font-weight: 600; }
 .viewbar[hidden] { display: none; }
 .viewbar .linkbtn { color: #fff; }
+.viewbar .vb { display: flex; gap: 4px 16px; flex-wrap: wrap; align-items: center; }
+.olist { list-style: none; margin: 0; padding: 0; }
+.olist .hit { font-size: 14px; color: var(--ink-2); }
+.msg .macts { margin-top: 6px; }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 0 16px; }
 .panel[hidden] { display: none; }
 .panel > summary { min-height: 52px; display: flex; align-items: center; font-weight: 600; cursor: pointer; }
@@ -324,7 +328,17 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   </form>
 </dialog>
 
-<div class="viewbar" id="viewbar" hidden><span>Je bekijkt <b id="viewname"></b> (alleen kijken)</span><button type="button" class="linkbtn" data-act="t-back">Terug naar mijn team</button></div>
+<dialog class="inbox" id="reqdlg" aria-labelledby="reqtitle">
+  <div class="inbox-head"><h2 id="reqtitle">Vraag om extra speler</h2><button type="button" class="linkbtn" id="reqclose">Sluiten</button></div>
+  <form id="reqform" class="addform" style="padding:14px 18px 18px;overflow-y:auto">
+    <p>Aan de captain(s) van <strong id="reqto"></strong>. Zij zien je bericht onder het belletje.</p>
+    <label for="reqbody">Bericht</label>
+    <textarea id="reqbody" rows="4" maxlength="300" required></textarea>
+    <div class="acts"><button class="btn" type="submit" id="reqsend">Versturen</button></div>
+  </form>
+</dialog>
+
+<div class="viewbar" id="viewbar" hidden><span>Je bekijkt <b id="viewname"></b> (alleen kijken)</span><span class="vb"><button type="button" class="linkbtn" id="vbreq" data-act="req-open" data-tid="" hidden>Vraag om extra speler</button><button type="button" class="linkbtn" data-act="t-back">Terug naar mijn team</button></span></div>
 <main class="in">
   <p class="note" id="note" hidden></p>
   <div class="installbar" id="installbar" hidden>
@@ -452,12 +466,28 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
           <button type="button" class="linkbtn" id="newcode">Nieuwe teamcode maken</button>
           </div>
         </details>
+        <details class="sec" name="adm-team">
+          <summary>Zichtbaarheid</summary>
+          <div class="secbody">
+          <label class="chk"><input id="tshare" type="checkbox"> Spelers van andere teams mogen meekijken</label>
+          <p class="note">Ze zien alleen de wedstrijden en wie er gooit. Teamcodes en berichten blijven privé.</p>
+          </div>
+        </details>
         </div>
       </details>
     </div>
   </details>
 
   <p class="foot">Speeldata kunnen veranderen. Controleer altijd de actuele datum op <a href="https://www.pdbdarts.nl/" target="_blank" rel="noopener">pdbdarts.nl</a> of in de Teambeheer-app.</p>
+  <details class="panel" id="othersbox" hidden>
+    <summary>Andere teams bekijken</summary>
+    <div class="body">
+      <p>Kijk mee bij een ander team of zoek een speler. Je kunt alleen kijken, niets aanpassen.</p>
+      <div class="addform" style="border:0;padding:0"><input type="search" id="osearch" maxlength="60" autocomplete="off" placeholder="Zoek een team of speler"></div>
+      <ul class="olist" id="otherlist"></ul>
+    </div>
+  </details>
+
   <details class="panel" id="superbox" hidden>
     <summary>Beheerder: alle teams</summary>
     <div class="body">
@@ -551,6 +581,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     editMatch: null,
     messages: [], reads: {}, hidden: {}, fresh: {},
     msgTo: [],           /* leeg = iedereen */
+    requests: [], otherTeams: [], myTeam: null, myAdmin: false, oq: '', playerHits: [], reqTo: null,
     seasonAsk: false,
     pending: null
   };
@@ -634,6 +665,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   }
   function writeAnswer(mid, pid, s) {
     if (!sb || !state.uid) { toast('Log in om je antwoord op te slaan.'); return; }
+    if (state.viewTeam) { toast('Je bekijkt een ander team.'); return; }
     if (pid !== meId() && !state.isCaptain) { toast('Je kunt alleen je eigen antwoord aanpassen.'); return; }
     var t = Date.now(), k = 'p_' + pid;
     (state.answers[k] = state.answers[k] || { st: {} }).st[mid] = { s: s, t: t };
@@ -700,6 +732,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
         '<div class="acts"><button class="linkbtn" data-act="logout" data-fk="logout">Uitloggen</button></div>';
       return;
     }
+    if (state.viewTeam) { el.innerHTML = ''; return; }
     var me = meId(), h;
     if (!me) {
       h = '<section class="who"><h2>Wie ben jij?</h2><p>Kies je naam. Daarna kan alleen jij jouw antwoorden aanpassen.</p><div class="chips">' +
@@ -834,6 +867,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     if (state.team) {
       if (document.activeElement !== $('tname')) $('tname').value = state.team.name;
       if (document.activeElement !== $('tmin')) $('tmin').value = state.team.min_players;
+      if ($('tshare')) $('tshare').checked = state.team.share !== false;
       $('teamcode').innerHTML = state.codes ? 'Teamcode voor nieuwe spelers: <strong>' + esc(state.codes.join_code) + '</strong>' : '';
     }
     $('adminlist').innerHTML = PLAYERS.map(function (p) {
@@ -925,7 +959,11 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   function myPlayerId() { var c = state.uid && state.claims[state.uid]; return c ? c.p : null; }
   function inboxList() {
     var me = myPlayerId();
-    return state.messages.filter(function (m) { return !state.hidden[m.id] && (!m.to_players || (me && m.to_players.indexOf(me) >= 0)); });
+    var l = state.messages.filter(function (m) { return !state.hidden[m.id] && (!m.to_players || (me && m.to_players.indexOf(me) >= 0)); });
+    var q = (state.requests || []).map(function (r) {
+      return { id: 'r:' + r.id, title: 'Vraag van ' + r.from_team_name, body: (r.from_name ? r.from_name + ': ' : '') + r.body, created_at: r.created_at, req: r };
+    }).filter(function (m) { return !state.hidden[m.id]; });
+    return l.concat(q).sort(function (a, b) { return Date.parse(b.created_at) - Date.parse(a.created_at); });
   }
   function unreadCount() { return inboxList().filter(function (m) { return !state.reads[m.id]; }).length; }
   function renderInbox() {
@@ -933,7 +971,8 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     var TRASH = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>';
     $('inboxlist').innerHTML = list.length ? list.map(function (m) {
       return '<li class="mw" data-mid="' + esc(m.id) + '"><button type="button" class="mdel" data-del="' + esc(m.id) + '" aria-label="Verwijder bericht">' + TRASH + '</button>' +
-        '<div class="msg' + (state.fresh[m.id] ? ' new' : '') + '"><div class="mhead"><strong>' + esc(m.title) + '</strong><small>' + esc(matchWhen(m.created_at)) + '</small></div><p>' + esc(m.body) + '</p></div></li>';
+        '<div class="msg' + (state.fresh[m.id] ? ' new' : '') + '"><div class="mhead"><strong>' + esc(m.title) + '</strong><small>' + esc(matchWhen(m.created_at)) + '</small></div><p>' + esc(m.body) + '</p>' +
+        (m.req ? '<div class="macts"><button type="button" class="linkbtn" data-act="req-reply" data-tid="' + esc(m.req.from_team) + '" data-tname="' + esc(m.req.from_team_name) + '">Antwoord</button></div>' : '') + '</div></li>';
     }).join('') : '<li class="mw"><div class="msg empty">Je hebt geen berichten.</div></li>';
   }
   function renderBell() {
@@ -950,11 +989,21 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     function reads() {
       return run(sb.from('message_reads').select('message_id,hidden')).catch(function () { return run(sb.from('message_reads').select('message_id')); });
     }
+    function reqs() {
+      if (!state.myAdmin || !state.myTeam) return Promise.resolve({ r: [], rd: [] });
+      return Promise.all([
+        run(sb.from('team_requests').select('*').eq('to_team', state.myTeam).order('created_at', { ascending: false }).limit(30)),
+        run(sb.from('team_request_reads').select('request_id,hidden'))
+      ]).then(function (x) { return { r: x[0].data || [], rd: x[1].data || [] }; }).catch(function () { return { r: [], rd: [] }; });
+    }
     return Promise.all([
       run(sb.from('messages').select('*').order('created_at', { ascending: false }).limit(50)),
-      reads()
+      reads(),
+      reqs()
     ]).then(function (r) {
       var rd = {}, hd = {}; r[1].data.forEach(function (v) { rd[v.message_id] = true; if (v.hidden) hd[v.message_id] = true; });
+      state.requests = r[2].r;
+      r[2].rd.forEach(function (v) { rd['r:' + v.request_id] = true; if (v.hidden) hd['r:' + v.request_id] = true; });
       state.messages = r[0].data; state.reads = rd; state.hidden = hd;
       renderBell();
       if (wantInbox) { wantInbox = false; history.replaceState(null, '', location.pathname + location.search); openInbox(); }
@@ -969,7 +1018,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     if (unread.length) {
       unread.forEach(function (m) { state.reads[m.id] = true; });
       renderBell();
-      if (sb) run(sb.from('message_reads').upsert(unread.map(function (m) { return { message_id: m.id, user_id: state.uid }; }))).catch(function () {});
+      if (sb) persistReads(unread, false);
     }
   }
   /* swipe naar links toont een prullenbak; tik erop om het bericht te verwijderen */
@@ -1013,7 +1062,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     var li = $('inboxlist').querySelector('[data-mid="' + id + '"]');
     if (li) li.classList.add('gone');
     setTimeout(function () { renderBell(); renderInbox(); }, 260);
-    if (sb) run(sb.from('message_reads').upsert({ message_id: id, user_id: state.uid, hidden: true })).catch(function () {});
+    if (sb) persistReads([{ id: id }], true);
   }
   $('inboxlist').addEventListener('click', function (ev) {
     var b = ev.target.closest('.mdel');
@@ -1115,6 +1164,75 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     }).catch(function () { toast('Melding versturen is niet gelukt.'); });
   });
 
+
+  /* ---------- andere teams bekijken en een extra speler vragen ---------- */
+  function persistReads(list, hide) {
+    var a = [], b = [];
+    list.forEach(function (m) {
+      if (String(m.id).indexOf('r:') === 0) b.push({ request_id: m.id.slice(2), user_id: state.uid, hidden: !!hide });
+      else { var o = { message_id: m.id, user_id: state.uid }; if (hide) o.hidden = true; a.push(o); }
+    });
+    if (a.length) run(sb.from('message_reads').upsert(a)).catch(function () {});
+    if (b.length) run(sb.from('team_request_reads').upsert(b)).catch(function () {});
+  }
+  function otherTeamById(id) { return state.otherTeams.filter(function (t) { return t.id === id; })[0]; }
+  function renderOthers() {
+    var box = $('othersbox'); if (!box) return;
+    var on = !!state.myTeam && !state.isSuper && !state.viewTeam && state.dbState === 'ok';
+    box.hidden = !on; if (!on) return;
+    var q = (state.oq || '').trim().toLowerCase();
+    var h = '';
+    state.otherTeams.filter(function (t) { return !q || t.name.toLowerCase().indexOf(q) >= 0; }).forEach(function (t) {
+      h += '<li class="teamitem"><div class="th"><span class="huedot" style="width:18px;height:18px;background:' + hueColor(t.hue) + '"></span><strong class="tn">' + esc(t.name) + '</strong></div>' +
+        '<div class="tacts"><button type="button" class="linkbtn" data-act="t-view" data-tid="' + esc(t.id) + '">Bekijk team</button>' +
+        (state.myAdmin ? '<button type="button" class="linkbtn" data-act="req-open" data-tid="' + esc(t.id) + '" data-tname="' + esc(t.name) + '">Vraag om extra speler</button>' : '') + '</div></li>';
+    });
+    if (q.length >= 2) state.playerHits.forEach(function (p) {
+      var t = otherTeamById(p.team_id); if (!t) return;
+      h += '<li class="teamitem"><div class="hit"><strong>' + esc(p.name) + '</strong> · ' + esc(t.name) + '</div>' +
+        '<div class="tacts"><button type="button" class="linkbtn" data-act="t-view" data-tid="' + esc(t.id) + '">Bekijk team</button></div></li>';
+    });
+    $('otherlist').innerHTML = h || '<li><span class="note">' + (state.otherTeams.length ? 'Niets gevonden.' : 'Er zijn nog geen andere teams die meekijken toestaan.') + '</span></li>';
+  }
+  var oTimer = null;
+  $('osearch').addEventListener('input', function () {
+    state.oq = this.value;
+    var q = state.oq.trim();
+    clearTimeout(oTimer);
+    if (q.length < 2 || !sb) { state.playerHits = []; renderOthers(); return; }
+    renderOthers();
+    oTimer = setTimeout(function () {
+      run(sb.from('players').select('id,name,team_id').ilike('name', '%' + q.replace(/[%_,()]/g, ' ') + '%').neq('team_id', state.myTeam).limit(15))
+        .then(function (r) { if (state.oq.trim() === q) { state.playerHits = r.data || []; renderOthers(); } }).catch(function () {});
+    }, 300);
+  });
+  function openRequest(tid, name) {
+    if (!tid) return;
+    var tm = otherTeamById(tid);
+    state.reqTo = tid;
+    $('reqto').textContent = name || (tm ? tm.name : 'het team');
+    if (!$('reqbody').value.trim()) $('reqbody').value = 'Hoi! Wij zoeken een extra speler voor een wedstrijd. Hebben jullie iemand beschikbaar?';
+    var d = $('reqdlg');
+    if (!d.open) { if (d.showModal) d.showModal(); else d.setAttribute('open', ''); }
+  }
+  $('reqclose').addEventListener('click', function () { $('reqdlg').close(); });
+  $('reqform').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var b = $('reqbody').value.trim();
+    if (!sb || !state.reqTo || !b) return;
+    $('reqsend').disabled = true;
+    run(sb.rpc('send_team_request', { p_to_team: state.reqTo, p_body: b })).then(function () {
+      toast('Bericht verstuurd naar de captain(s).'); $('reqbody').value = ''; $('reqdlg').close();
+    }).catch(rpcFail).then(function () { $('reqsend').disabled = false; });
+  });
+  document.addEventListener('change', function (ev) {
+    if (ev.target.id !== 'tshare' || !sb || !state.team || !state.isCaptain) return;
+    var v = ev.target.checked;
+    run(sb.rpc('set_share', { p_team: state.team.id, p_share: v })).then(function () {
+      toast(v ? 'Andere teams mogen nu meekijken.' : 'Je team is nu privé.'); return loadAll();
+    }).catch(function (e) { ev.target.checked = !v; rpcFail(e); });
+  });
+
   function seasonLabel() {
     var ref = state.matches.length ? new Date(state.matches.slice().sort(byStart)[0].start) : new Date();
     var y = +new Intl.DateTimeFormat('en-US', { year: 'numeric', timeZone: TZ }).format(ref);
@@ -1133,6 +1251,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     $('season').textContent = state.team ? 'Wie gooit er mee? Seizoen ' + seasonLabel() : 'Voor darts-teams';
     $('teamname').textContent = state.team ? state.team.name : 'Wie gooit er mee?';
     $('viewbar').hidden = !state.viewTeam; $('viewname').textContent = state.team ? state.team.name : '';
+    var vbr = $('vbreq'); if (vbr) { vbr.hidden = !(state.viewTeam && state.myAdmin); vbr.setAttribute('data-tid', state.viewTeam || ''); vbr.setAttribute('data-tname', state.team ? state.team.name : ''); }
     document.title = state.team ? state.team.name : 'Wie gooit er mee?';
     document.documentElement.classList.toggle('noteam', state.dbState === 'ok' && !state.team);
     renderNote();
@@ -1140,6 +1259,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     renderLists();
     renderAdmin();
     renderSuper();
+    renderOthers();
     renderBell();
     if (state.isCaptain) renderMatchAdmin();
     if (fk) {
@@ -1171,6 +1291,11 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     } else if (act === 't-view') {
       state.viewTeam = t.getAttribute('data-tid'); state.expanded = {};
       window.scrollTo(0, 0); loadAll();
+    } else if (act === 'req-open') {
+      openRequest(t.getAttribute('data-tid'), t.getAttribute('data-tname'));
+    } else if (act === 'req-reply') {
+      if ($('inbox').open) $('inbox').close();
+      openRequest(t.getAttribute('data-tid'), t.getAttribute('data-tname'));
     } else if (act === 't-back') {
       state.viewTeam = null; state.expanded = {};
       window.scrollTo(0, 0); loadAll();
@@ -1315,6 +1440,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   }
   function resetTeamState() {
     state.team = null; state.claims = {}; state.claimsReady = false; state.isCaptain = false; state.isSuper = false; state.viewTeam = null;
+    state.myTeam = null; state.myAdmin = false; state.otherTeams = []; state.requests = [];
     state.matches = []; state.answers = {}; state.codes = null; PLAYERS = []; TEAM = ''; MIN = 4;
     applyTheme();
   }
@@ -1322,7 +1448,10 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     return Promise.all([run(sb.from('members').select('*')), run(sb.from('teams').select('*')), run(sb.from('super_admins').select('user_id'))]).then(function (r) {
       var mine = r[0].data.filter(function (v) { return v.user_id === state.uid; })[0];
       state.isSuper = r[2].data.length > 0;
-      if (!state.isSuper) state.viewTeam = null;
+      state.myTeam = mine ? mine.team_id : null; state.myAdmin = !!(mine && mine.is_admin);
+      if (!state.isSuper && !mine) state.viewTeam = null;
+      if (mine && state.viewTeam === mine.team_id) state.viewTeam = null;
+      state.otherTeams = r[1].data.filter(function (t) { return t.id !== state.myTeam && t.active !== false; }).sort(function (a, b) { return a.name.localeCompare(b.name, 'nl'); });
       var vt = state.viewTeam || null;           /* beheerder van de hele app bekijkt een ander team */
       if (!mine && !vt) {
         resetTeamState(); state.isSuper = r[2].data.length > 0;
@@ -1395,7 +1524,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     if ($('kasteleinbox')) $('kasteleinbox').hidden = !state.isSuper;
     if (!state.isSuper) return;
     $('teamlist').innerHTML = (state.teams || []).map(function (t) {
-      return '<li class="teamitem' + (t.active ? '' : ' off') + '"><div class="th"><span class="huedot" style="width:18px;height:18px;background:' + hueColor(t.hue) + '"></span><strong class="tn">' + esc(t.name) + '</strong><span class="note">' + t.members + ' leden' + (t.active ? '' : ' · uit') + '</span></div>' +
+      return '<li class="teamitem' + (t.active ? '' : ' off') + '"><div class="th"><span class="huedot" style="width:18px;height:18px;background:' + hueColor(t.hue) + '"></span><strong class="tn">' + esc(t.name) + '</strong><span class="note">' + t.members + ' leden' + (t.active ? '' : ' · uit') + (t.share === false ? ' · niet gedeeld' : '') + '</span></div>' +
         '<div class="tcodes">Teamcode: <b>' + esc(t.join_code || '') + '</b>' + (t.captain_code ? '<br>Code voor beheerder: <b>' + esc(t.captain_code) + '</b>' : '<br>Beheerder is aangesloten') + '</div>' +
         '<div class="tacts"><button class="linkbtn" data-act="t-view" data-tid="' + t.id + '">Bekijk team</button>' +
         '<button class="linkbtn" data-act="t-rename" data-tid="' + t.id + '">Naam wijzigen</button>' +
