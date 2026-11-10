@@ -582,7 +582,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     editMatch: null,
     messages: [], reads: {}, hidden: {}, fresh: {},
     msgTo: [],           /* leeg = iedereen */
-    requests: [], otherTeams: [], myTeam: null, myAdmin: false, oq: '', playerHits: [], reqTo: null,
+    requests: [], otherTeams: [], myTeam: null, myAdmin: false, myRole: '', oq: '', playerHits: [], reqTo: null,
     seasonAsk: false,
     pending: null
   };
@@ -1189,7 +1189,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     state.otherTeams.filter(function (t) { return !q || t.name.toLowerCase().indexOf(q) >= 0; }).forEach(function (t) {
       h += '<li class="teamitem"><div class="th"><span class="huedot" style="width:18px;height:18px;background:' + hueColor(t.hue) + '"></span><strong class="tn">' + esc(t.name) + '</strong></div>' +
         '<div class="tacts"><button type="button" class="linkbtn" data-act="t-view" data-tid="' + esc(t.id) + '">Bekijk team</button>' +
-        (state.myAdmin ? '<button type="button" class="linkbtn" data-act="req-open" data-tid="' + esc(t.id) + '" data-tname="' + esc(t.name) + '">Stuur de captain een bericht</button>' : '') + '</div></li>';
+        (canMsg() ? '<button type="button" class="linkbtn" data-act="req-open" data-tid="' + esc(t.id) + '" data-tname="' + esc(t.name) + '">Stuur de captain een bericht</button>' : '') + '</div></li>';
     });
     if (q.length >= 2) state.playerHits.forEach(function (p) {
       var t = otherTeamById(p.team_id); if (!t) return;
@@ -1212,6 +1212,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   });
   function openRequest(tid, name) {
     if (!tid) return;
+    if (!canMsg()) { toast('Alleen de captain, reserve-captain of beheerder kan een ander team een bericht sturen.'); return; }
     var tm = otherTeamById(tid);
     state.reqTo = tid;
     $('reqto').textContent = name || (tm ? tm.name : 'het team');
@@ -1223,6 +1224,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     ev.preventDefault();
     var b = $('reqbody').value.trim();
     if (!sb || !state.reqTo || !b) return;
+    if (!canMsg()) { toast('Alleen de captain, reserve-captain of beheerder kan een ander team een bericht sturen.'); return; }
     $('reqsend').disabled = true;
     run(sb.rpc('send_team_request', { p_to_team: state.reqTo, p_body: b })).then(function () {
       toast('Bericht verstuurd naar de captain(s).'); $('reqbody').value = ''; $('reqdlg').close();
@@ -1254,7 +1256,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     $('season').textContent = state.team ? 'Wie gooit er mee? Seizoen ' + seasonLabel() : 'Voor darts-teams';
     $('teamname').textContent = state.team ? state.team.name : 'Wie gooit er mee?';
     $('viewbar').hidden = !state.viewTeam; $('viewname').textContent = state.team ? state.team.name : '';
-    var vbr = $('vbreq'); if (vbr) { vbr.hidden = !(state.viewTeam && state.myAdmin); vbr.setAttribute('data-tid', state.viewTeam || ''); vbr.setAttribute('data-tname', state.team ? state.team.name : ''); }
+    var vbr = $('vbreq'); if (vbr) { vbr.hidden = !(state.viewTeam && canMsg()); vbr.setAttribute('data-tid', state.viewTeam || ''); vbr.setAttribute('data-tname', state.team ? state.team.name : ''); }
     document.title = state.team ? state.team.name : 'Wie gooit er mee?';
     document.documentElement.classList.toggle('noteam', state.dbState === 'ok' && !state.team);
     renderNote();
@@ -1443,12 +1445,20 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   }
   function resetTeamState() {
     state.team = null; state.claims = {}; state.claimsReady = false; state.isCaptain = false; state.isSuper = false; state.viewTeam = null;
-    state.myTeam = null; state.myAdmin = false; state.otherTeams = []; state.requests = [];
+    state.myTeam = null; state.myAdmin = false; state.myRole = ''; state.otherTeams = []; state.requests = [];
     state.matches = []; state.answers = {}; state.codes = null; PLAYERS = []; TEAM = ''; MIN = 4;
     applyTheme();
   }
+  /* alleen captain (C), reserve-captain (RC) en super admin mogen een ander team een bericht sturen */
+  function canMsg() { return !!state.isSuper || state.myRole === 'C' || state.myRole === 'RC'; }
   function loadAll() {
     return Promise.all([run(sb.from('members').select('*')), run(sb.from('teams').select('*')), run(sb.from('super_admins').select('user_id'))]).then(function (r) {
+      var m0 = r[0].data.filter(function (v) { return v.user_id === state.uid; })[0];
+      if (!m0 || !m0.player_id) return [r, ''];
+      return run(sb.from('players').select('role').eq('id', m0.player_id)).then(function (x) { return [r, (x.data && x.data[0] && x.data[0].role) || '']; }).catch(function () { return [r, '']; });
+    }).then(function (z) {
+      var r = z[0];
+      state.myRole = z[1];
       var mine = r[0].data.filter(function (v) { return v.user_id === state.uid; })[0];
       state.isSuper = r[2].data.length > 0;
       state.myTeam = mine ? mine.team_id : null; state.myAdmin = !!(mine && mine.is_admin);
@@ -1530,6 +1540,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
       return '<li class="teamitem' + (t.active ? '' : ' off') + '"><div class="th"><span class="huedot" style="width:18px;height:18px;background:' + hueColor(t.hue) + '"></span><strong class="tn">' + esc(t.name) + '</strong><span class="note">' + t.members + ' leden' + (t.active ? '' : ' · uit') + (t.share === false ? ' · niet gedeeld' : '') + '</span></div>' +
         '<div class="tcodes">Teamcode: <b>' + esc(t.join_code || '') + '</b>' + (t.captain_code ? '<br>Code voor beheerder: <b>' + esc(t.captain_code) + '</b>' : '<br>Beheerder is aangesloten') + '</div>' +
         '<div class="tacts"><button class="linkbtn" data-act="t-view" data-tid="' + t.id + '">Bekijk team</button>' +
+        '<button class="linkbtn" data-act="req-open" data-tid="' + t.id + '" data-tname="' + esc(t.name) + '">Stuur de captain een bericht</button>' +
         '<button class="linkbtn" data-act="t-rename" data-tid="' + t.id + '">Naam wijzigen</button>' +
         '<button class="linkbtn" data-act="t-qr" data-tid="' + t.id + '">QR beheerder</button>' +
         '<label class="linkbtn filebtn">Wedstrijden inladen<input type="file" accept=".ics,text/calendar" data-ics="' + t.id + '" hidden></label>' +
