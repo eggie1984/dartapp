@@ -526,15 +526,29 @@ details[open] .chev { transform: rotate(90deg); }
   if (!CFG.SUPABASE_URL || /JOUW/.test(CFG.SUPABASE_URL)) return;
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
   sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
+  /* realtime: een wijziging op een ander toestel (gezien/verwijderd) komt meteen binnen */
+  var rt = null;
+  function watchRealtime() {
+    if (rt) { try { sb.removeChannel(rt); } catch (e) {} rt = null; }
+    if (!S.uid) return;
+    var uid = S.uid;
+    rt = sb.channel('vcs-' + uid)
+      .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'venue_change_state', filter: 'user_id=eq.' + uid },
+          function () { pullState(); })
+      .subscribe();
+  }
   sb.auth.onAuthStateChange(function (ev, session) {
     var id = session ? session.user.id : null;
     if (id && id === S.uid) return;
     S.uid = id; S.email = session ? session.user.email : ''; S.canSwitch = false; S.switchFor = null;
+    watchRealtime();
     if (id) { S.state = 'start'; S.data = null; render(); setTimeout(function () { load(); checkPush(); }, 0); }
     else { S.state = 'start'; S.data = null; S.push = false; S.loaded = null; render(); }
   });
   document.addEventListener('visibilitychange', function () { if (!document.hidden && S.uid) load(); });
-  timer = setInterval(function () { if (!document.hidden && S.uid && S.state === 'ready') load(); }, 60000);
+  window.addEventListener('online', function () { if (S.uid) load(); });
+  timer = setInterval(function () { if (!document.hidden && S.uid && S.state === 'ready') load(); }, 30000);
 })();
 </script>
 <script>
