@@ -268,7 +268,7 @@ details[open] .chev { transform: rotate(90deg); }
     $('bell').hidden = !(S.uid && S.state === 'ready');
     $('bell').setAttribute('aria-pressed', S.push ? 'true' : 'false');
     $('bell').textContent = S.push ? 'Meldingen aan' : 'Meldingen aanzetten';
-    $('sub').textContent = S.loaded ? 'Alleen kijken \u00B7 bijgewerkt ' + fTime.format(S.loaded) + ' \u00B7 v2' : 'Alleen kijken \u00B7 v2';
+    $('sub').textContent = S.loaded ? 'Alleen kijken \u00B7 bijgewerkt ' + fTime.format(S.loaded) : 'Alleen kijken';
 
     if (!CFG.SUPABASE_URL || /JOUW/.test(CFG.SUPABASE_URL)) { main.appendChild(el('div', { class: 'card' }, el('p', { text: 'De app is nog niet gekoppeld aan Supabase (config.js).' }))); return; }
     if (!S.uid) { main.appendChild(loginView()); return; }
