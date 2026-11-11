@@ -249,6 +249,14 @@ details[open] .chev { transform: rotate(90deg); }
     if (!sb || !S.uid) return;
     checkSwitch();
     pullState();
+    var uidT = S.uid;
+    sb.from('venue_test_changes').select('*').gte('created_at', new Date(Date.now() - 864e5).toISOString()).then(function (r) {
+      if (uidT !== S.uid || !r || r.error) return;
+      S.testRows = (r.data || []).map(function (t) {
+        return { id: 1e12 + t.id, match_id: 'test-' + t.id, old_start: t.old_start, new_start: t.new_start, old_loc: '', new_loc: '', opp: t.opp, team_name: t.team_name, created_at: t.created_at };
+      });
+      if (S.data) render();
+    }, function () {});
     sb.rpc('venue_overview').then(function (r) {
       if (r.error) {
         if (/Geen toegang/i.test(r.error.message || '')) { S.state = 'noaccess'; S.err = ''; }
@@ -311,7 +319,7 @@ details[open] .chev { transform: rotate(90deg); }
   }
 
   function changesView() {
-    var allRaw = collapse(S.data.changes || []);
+    var allRaw = collapse((S.data.changes || []).concat(S.testRows || []));
     var gone = dismissed();
     var all = allRaw.filter(function (c) { return !gone[chgKey(c)]; });
     var seen = seenAt();
@@ -486,7 +494,13 @@ details[open] .chev { transform: rotate(90deg); }
   function checkPush() {
     if (!pushOK()) return;
     navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); })
-      .then(function (sub) { S.push = !!sub; render(); }).catch(function () {});
+      .then(function (sub) {
+        S.push = !!sub; render();
+        if (sub && S.uid && Notification.permission === 'granted') {
+          var j = sub.toJSON();
+          sb.rpc('claim_push_subscription', { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth });
+        }
+      }).catch(function () {});
   }
   function togglePush() {
     if (!pushOK()) { toast('Meldingen werken hier niet. Op iPhone: zet de pagina eerst op je beginscherm en open hem daarvandaan.'); return; }
@@ -512,10 +526,11 @@ details[open] .chev { transform: rotate(90deg); }
   /* ---------- start ---------- */
   $('bell').addEventListener('click', togglePush);
   $('testalert').addEventListener('click', function () {
-    var all = window.confirm('Testmelding sturen.\n\nOK = ook naar de kastelein(s)\nAnnuleren = alleen naar mij');
+    var all = true;
     var b = $('testalert'); b.disabled = true;
     sb.functions.invoke('venue-alert', { body: { test: true, all: all } }).then(function (r) {
       b.disabled = false;
+      if (!r.error) load();
       if (r.error) toast('Testmelding mislukt.');
       else if (r.data && r.data.sent === 0) toast('Er is geen toestel van jou aangemeld voor meldingen. Zet eerst "Meldingen aanzetten" aan.');
       else toast(all ? 'Testmelding verstuurd naar ' + r.data.sent + ' toestel(len), kastelein(s) inbegrepen.' : 'Testmelding verstuurd.');
@@ -536,6 +551,7 @@ details[open] .chev { transform: rotate(90deg); }
       .on('postgres_changes',
           { event: '*', schema: 'public', table: 'venue_change_state', filter: 'user_id=eq.' + uid },
           function () { pullState(); })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'venue_test_changes' }, function () { load(); })
       .subscribe();
   }
   sb.auth.onAuthStateChange(function (ev, session) {
