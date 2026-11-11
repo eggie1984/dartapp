@@ -248,6 +248,7 @@ details[open] .chev { transform: rotate(90deg); }
   function load() {
     if (!sb || !S.uid) return;
     checkSwitch();
+    pullState();
     sb.rpc('venue_overview').then(function (r) {
       if (r.error) {
         if (/Geen toegang/i.test(r.error.message || '')) { S.state = 'noaccess'; S.err = ''; }
@@ -267,7 +268,7 @@ details[open] .chev { transform: rotate(90deg); }
     $('bell').hidden = !(S.uid && S.state === 'ready');
     $('bell').setAttribute('aria-pressed', S.push ? 'true' : 'false');
     $('bell').textContent = S.push ? 'Meldingen aan' : 'Meldingen aanzetten';
-    $('sub').textContent = S.loaded ? 'Alleen kijken \u00B7 bijgewerkt ' + fTime.format(S.loaded) : 'Alleen kijken';
+    $('sub').textContent = S.loaded ? 'Alleen kijken \u00B7 bijgewerkt ' + fTime.format(S.loaded) + ' \u00B7 v2' : 'Alleen kijken \u00B7 v2';
 
     if (!CFG.SUPABASE_URL || /JOUW/.test(CFG.SUPABASE_URL)) { main.appendChild(el('div', { class: 'card' }, el('p', { text: 'De app is nog niet gekoppeld aan Supabase (config.js).' }))); return; }
     if (!S.uid) { main.appendChild(loginView()); return; }
@@ -313,7 +314,7 @@ details[open] .chev { transform: rotate(90deg); }
     var allRaw = collapse(S.data.changes || []);
     var gone = dismissed();
     var all = allRaw.filter(function (c) { return !gone[chgKey(c)]; });
-    var seen = parseInt(store('kroeg-seen') || '0', 10);
+    var seen = seenAt();
     var isNew = function (c) { return Date.parse(c.at) > seen; };
     var fresh = all.filter(isNew).length, old = all.length - fresh;
     var list = S.showOld ? all : all.filter(isNew);
@@ -335,7 +336,7 @@ details[open] .chev { transform: rotate(90deg); }
     });
     var row = el('div', { class: 'row', style: 'margin-top:10px' });
     if (list.length > 5) row.appendChild(el('button', { class: 'btn ghost', type: 'button', onclick: function () { S.showAll = !S.showAll; render(); } }, S.showAll ? 'Minder tonen' : 'Alles tonen (' + list.length + ')'));
-    if (fresh) row.appendChild(el('button', { class: 'btn ghost', type: 'button', onclick: function () { store('kroeg-seen', String(Date.now())); S.showAll = false; S.showOld = false; render(); } }, 'Wissen'));
+    if (fresh) row.appendChild(el('button', { class: 'btn ghost', type: 'button', onclick: function () { markSeen(); S.showAll = false; S.showOld = false; render(); } }, 'Wissen'));
     if (old) row.appendChild(el('button', { class: 'btn ghost', type: 'button', onclick: function () { S.showOld = !S.showOld; S.showAll = false; render(); } }, S.showOld ? 'Eerdere verbergen' : 'Eerdere tonen (' + old + ')'));
     if (row.childNodes.length) box.appendChild(row);
     attachSwipe(box);
@@ -346,7 +347,39 @@ details[open] .chev { transform: rotate(90deg); }
   var TRASH = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>';
   function chgKey(c) { return [c.kind, c.team, c.opp, c.at].join('|'); }
   function dismissed() { try { return JSON.parse(store('kroeg-dismissed') || '{}') || {}; } catch (e) { return {}; } }
-  function dismiss(key) { var d = dismissed(); d[key] = Date.now(); store('kroeg-dismissed', JSON.stringify(d)); }
+  function dismiss(key) { var d = dismissed(); d[key] = Date.now(); store('kroeg-dismissed', JSON.stringify(d)); pushState(); }
+  function seenAt() { return parseInt(store('kroeg-seen') || '0', 10) || 0; }
+  function markSeen() { store('kroeg-seen', String(Date.now())); pushState(); }
+
+  /* ---------- gezien/verwijderd bewaren per account (tabel venue_change_state), zodat telefoon en laptop gelijk lopen ---------- */
+  var syncWarned = false;
+  function syncWarn(t) { if (syncWarned) return; syncWarned = true; toast(t); }
+  function pushState() {
+    if (!sb || !S.uid) return;
+    var cut = Date.now() - 45 * 864e5, g = dismissed();
+    Object.keys(g).forEach(function (k) { if (g[k] < cut) delete g[k]; });
+    store('kroeg-dismissed', JSON.stringify(g));
+    sb.from('venue_change_state').upsert({ user_id: S.uid, seen_at: new Date(seenAt()).toISOString(), dismissed: g, updated_at: new Date().toISOString() })
+      .then(function (r) { if (r && r.error) syncWarn('Sync mislukt: ' + (r.error.message || r.error.code || 'onbekend')); }, function (e) { syncWarn('Sync mislukt: ' + ((e && e.message) || 'geen verbinding')); });
+  }
+  function pullState() {
+    if (!sb || !S.uid) return;
+    var uid = S.uid;
+    sb.from('venue_change_state').select('seen_at,dismissed').eq('user_id', uid).maybeSingle().then(function (r) {
+      if (uid !== S.uid) return;
+      if (r.error) { syncWarn('Sync lezen mislukt: ' + (r.error.message || r.error.code || 'onbekend')); return; }
+      if (!r.data) { if (seenAt() || Object.keys(dismissed()).length) pushState(); return; }
+      var rs = Date.parse(r.data.seen_at) || 0, rg = r.data.dismissed || {};
+      var ls = seenAt(), lg = dismissed(), ms = Math.max(rs, ls), mg = {}, k, changed = false, needPush = false;
+      Object.keys(rg).forEach(function (x) { mg[x] = rg[x]; });
+      Object.keys(lg).forEach(function (x) { if (!(x in mg)) { mg[x] = lg[x]; needPush = true; } });
+      if (ms !== ls) { store('kroeg-seen', String(ms)); changed = true; }
+      if (Object.keys(mg).length !== Object.keys(lg).length) { store('kroeg-dismissed', JSON.stringify(mg)); changed = true; }
+      if (ls > rs) needPush = true;
+      if (needPush) pushState();
+      if (changed) render();
+    }, function () {});
+  }
   function attachSwipe(box) {
     var OPEN = 88, sw = null;
     function closeOthers(except) {
