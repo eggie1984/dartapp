@@ -109,6 +109,15 @@ main { padding-top: 18px; display: flex; flex-direction: column; gap: 16px; }
 .whoami { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 15px; flex-wrap: wrap; }
 .linkbtn { background: none; border: 0; padding: 8px 0; color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; min-height: 40px; text-align: left; }
 
+/* wachtwoord tonen */
+.pwwrap { position: relative; }
+.pwwrap input { padding-right: 52px; }
+.pweye { position: absolute; top: 0; right: 0; bottom: 0; width: 48px; display: flex; align-items: center; justify-content: center; background: none; border: 0; padding: 0; color: var(--ink-2); cursor: pointer; border-radius: 0 10px 10px 0; }
+.pweye svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pweye .off, .pweye[aria-pressed="true"] .on { display: none; }
+.pweye[aria-pressed="true"] .off { display: block; }
+html.recovery main.in > :not(#who) { display: none !important; }
+
 /* summary */
 .summary { display: flex; align-items: center; gap: 14px; }
 .summary .num { font: 700 56px/0.9 var(--font-display); color: var(--no); font-variant-numeric: tabular-nums; min-width: 40px; text-align: center; }
@@ -649,11 +658,11 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   }
 
   var toastTimer = null;
-  function toast(msg) {
+  function toast(msg, ms) {
     $('toasttext').textContent = msg;
     $('toast').className = 'show';
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { $('toast').className = ''; }, 4500);
+    toastTimer = setTimeout(function () { $('toast').className = ''; }, ms || 4500);
   }
 
   /* ---------- writing ---------- */
@@ -703,10 +712,13 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   }
   $('addform').addEventListener('submit', function (ev) { ev.preventDefault(); addPlayer($('newname').value, $('newrole').value); });
 
+  var EYE = '<button type="button" class="pweye" data-pweye aria-label="Wachtwoord tonen" aria-pressed="false"><svg class="on" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="off" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.94 17.94A10.9 10.9 0 0 1 12 19c-7 0-11-7-11-7a19.8 19.8 0 0 1 5.06-5.94M9.9 4.24A10.9 10.9 0 0 1 12 5c7 0 11 7 11 7a19.8 19.8 0 0 1-3.17 4.19M14.12 14.12A3 3 0 1 1 9.88 9.88"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button>';
+
   /* ---------- rendering ---------- */
   function renderNote() {
     var n = $('note'), t = '';
-    if (state.dbState === 'none') t = 'Log in om de antwoorden te zien en in te vullen.';
+    if (state.recovery) t = '';
+    else if (state.dbState === 'none') t = 'Log in om de antwoorden te zien en in te vullen.';
     else if (state.dbState === 'pending') t = 'Antwoorden laden...';
     else if (state.dbState === 'slow') t = 'De antwoorden zijn nog niet opgehaald. Wat je ziet kan verouderd zijn.';
     else if (state.dbState === 'error') t = 'De antwoorden konden niet worden geladen. Open de pagina opnieuw.';
@@ -720,8 +732,14 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     if (!state.uid) {
       if (!$('authform')) el.innerHTML = '<section class="who"><h2>Inloggen</h2><p>Log in met je e-mailadres. Heb je nog geen account, kies dan Nieuw account maken.</p>' +
         '<form id="authform" class="addform" style="border:0;padding:0"><input id="aemail" type="email" autocomplete="email" placeholder="E-mailadres" required>' +
-        '<input id="apass" type="password" minlength="6" autocomplete="current-password" placeholder="Wachtwoord (minimaal 6 tekens)" required>' +
-        '<div class="acts"><button class="btn" type="submit">Inloggen</button><button type="button" class="linkbtn" data-act="signup">Nieuw account maken</button></div></form></section>';
+        '<div class="pwwrap"><input id="apass" type="password" minlength="6" autocomplete="current-password" placeholder="Wachtwoord (minimaal 6 tekens)" required>' + EYE + '</div>' +
+        '<div class="acts"><button class="btn" type="submit">Inloggen</button><button type="button" class="linkbtn" data-act="signup">Nieuw account maken</button><button type="button" class="linkbtn" data-act="forgot">Wachtwoord vergeten?</button></div></form></section>';
+      return;
+    }
+    if (state.recovery) {
+      if (!$('recform')) el.innerHTML = '<section class="who"><h2>Nieuw wachtwoord kiezen</h2><p>Kies een nieuw wachtwoord voor ' + esc(state.email) + '.</p>' +
+        '<form id="recform" class="addform" style="border:0;padding:0"><div class="pwwrap"><input id="rpass" type="password" minlength="6" autocomplete="new-password" aria-label="Nieuw wachtwoord" placeholder="Nieuw wachtwoord (minimaal 6 tekens)" required>' + EYE + '</div>' +
+        '<div class="acts"><button class="btn" type="submit">Wachtwoord opslaan</button><button type="button" class="linkbtn" data-act="recovery-cancel">Annuleren</button></div></form></section>';
       return;
     }
     if (!state.claimsReady) { el.innerHTML = ''; return; }
@@ -1252,6 +1270,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   }
   function render() {
     updateSwitch();
+    document.documentElement.classList.toggle('recovery', !!state.recovery);
     var ae = document.activeElement, fk = ae && ae.dataset ? ae.dataset.fk : null;
     $('season').textContent = state.team ? 'Wie gooit er mee? Seizoen ' + seasonLabel() : 'Voor darts-teams';
     $('teamname').textContent = state.team ? state.team.name : 'Wie gooit er mee?';
@@ -1349,6 +1368,8 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     } else if (act === 'push') { enablePush();
     } else if (act === 'logout') { sb.auth.signOut();
     } else if (act === 'signup') { auth(true);
+    } else if (act === 'forgot') { forgotPassword();
+    } else if (act === 'recovery-cancel') { state.recovery = false; clearHash(); sb.auth.signOut();
     } else if (act === 'msgto') { toggleMsgTo(t.getAttribute('data-pid'));
     } else if (act === 'testpush') {
       sb.functions.invoke('send-reminders', { body: { test: true } }).then(function (r) { toast(r.error ? 'Testmelding mislukt.' : 'Testmelding verstuurd.'); });
@@ -1654,6 +1675,47 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     });
   }
   document.addEventListener('submit', function (ev) { if (ev.target.id === 'authform') { ev.preventDefault(); auth(false); } });
+
+  /* ---------- wachtwoord tonen, vergeten en opnieuw instellen ---------- */
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest ? ev.target.closest('[data-pweye]') : null;
+    if (!b) return;
+    var inp = b.parentNode.querySelector('input');
+    if (!inp) return;
+    var show = inp.type === 'password';
+    inp.type = show ? 'text' : 'password';
+    b.setAttribute('aria-pressed', show ? 'true' : 'false');
+    b.setAttribute('aria-label', show ? 'Wachtwoord verbergen' : 'Wachtwoord tonen');
+  });
+  function forgotPassword() {
+    var f = $('aemail'), email = f ? f.value.trim() : '';
+    if (!email) { toast('Vul eerst je e-mailadres in en kies dan Wachtwoord vergeten.'); if (f) f.focus(); return; }
+    sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname }).then(function (r) {
+      toast(r.error ? 'Mail versturen is niet gelukt. Probeer het over een paar minuten nog eens.' : 'Als dit e-mailadres bekend is, ontvang je een mail met een link om een nieuw wachtwoord te kiezen.', 8000);
+    });
+  }
+  function startApp() {
+    state.dbState = 'pending'; render();
+    setTimeout(function () { loadAll(); checkPush(); }, 0);
+    if (!channel) channel = sb.channel('alles').on('postgres_changes', { event: '*', schema: 'public' }, function () { clearTimeout(rt); rt = setTimeout(loadAll, 300); }).subscribe();
+  }
+  function clearHash() { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
+  document.addEventListener('submit', function (ev) {
+    if (ev.target.id !== 'recform') return;
+    ev.preventDefault();
+    var pw = $('rpass').value;
+    if (pw.length < 6) { toast('Kies een wachtwoord van minimaal 6 tekens.'); return; }
+    sb.auth.updateUser({ password: pw }).then(function (r) {
+      if (r.error) {
+        toast(/different from the old/i.test(r.error.message) ? 'Kies een ander wachtwoord dan je oude.' : 'Wachtwoord wijzigen is niet gelukt: ' + r.error.message);
+        return;
+      }
+      state.recovery = false; clearHash();
+      toast('Je wachtwoord is aangepast.');
+      startApp();
+    });
+  });
+
   function urlB64(s) {
     var p = '='.repeat((4 - s.length % 4) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/'));
     return Uint8Array.from(b, function (ch) { return ch.charCodeAt(0); });
@@ -1681,19 +1743,26 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
   if (!CFG.SUPABASE_URL || /JOUW/.test(CFG.SUPABASE_URL)) { state.dbState = 'none'; render(); }
   else {
+    state.recovery = /[#&]type=recovery/.test(location.hash);
+    if (/error_code=otp_expired|error=access_denied/.test(location.hash)) {
+      clearHash();
+      setTimeout(function () { toast('Deze link is verlopen of al gebruikt. Kies Wachtwoord vergeten om een nieuwe te krijgen.', 8000); }, 500);
+    }
     sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
     db = sb; state.dbState = 'none';
     sb.auth.onAuthStateChange(function (ev, session) {
       var id = session ? session.user.id : null;
-      if (id && id === state.uid) return;
+      if (ev === 'PASSWORD_RECOVERY') state.recovery = true;
+      if (id && id === state.uid) { if (state.recovery) render(); return; }
       state.uid = id; state.email = session ? (session.user.email || '') : '';
-      if (id) {
+      if (id && state.recovery) { render(); }
+      else if (id) {
         state.dbState = 'pending'; render();
         setTimeout(function () { loadAll(); checkPush(); }, 0);
         if (!channel) channel = sb.channel('alles').on('postgres_changes', { event: '*', schema: 'public' }, function () { clearTimeout(rt); rt = setTimeout(loadAll, 300); }).subscribe();
-      } else { state.dbState = 'none'; resetTeamState(); render(); }
+      } else { state.recovery = false; state.dbState = 'none'; resetTeamState(); render(); }
     });
-    document.addEventListener('visibilitychange', function () { if (!document.hidden && state.uid) loadAll(); });
+    document.addEventListener('visibilitychange', function () { if (!document.hidden && state.uid && !state.recovery) loadAll(); });
   }
 })();
 </script>

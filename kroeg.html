@@ -72,6 +72,13 @@ input[type=email], input[type=password] {
   width: 100%; padding: 12px; font: 16px var(--font-body); color: var(--ink); background: var(--bg);
   border: 1px solid var(--line); border-radius: 10px; margin: 4px 0 12px;
 }
+.pwwrap { position: relative; margin: 4px 0 12px; }
+.pwwrap input { width: 100%; padding: 12px 52px 12px 12px; font: 16px var(--font-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; margin: 0; }
+.pweye { position: absolute; top: 0; right: 0; bottom: 0; width: 48px; display: flex; align-items: center; justify-content: center; background: none; border: 0; padding: 0; color: var(--ink-2); cursor: pointer; border-radius: 0 10px 10px 0; }
+.pweye svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pweye .off, .pweye[aria-pressed="true"] .on { display: none; }
+.pweye[aria-pressed="true"] .off { display: block; }
+.linkbtn { background: none; border: 0; padding: 8px 0; color: var(--ink); font: 600 15px var(--font-body); text-decoration: underline; text-underline-offset: 3px; min-height: 40px; cursor: pointer; }
 label { font-weight: 600; font-size: 14px; }
 .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .login { max-width: 420px; margin: 32px auto; }
@@ -167,7 +174,7 @@ details[open] .chev { transform: rotate(90deg); }
   var TZ = 'Europe/Amsterdam';
   var CFG = window.APP_CONFIG || {};
   var $ = function (id) { return document.getElementById(id); };
-  var S = { uid: null, email: '', data: null, filter: null, push: false, state: 'start', err: '', loaded: null, signup: false };
+  var S = { uid: null, email: '', data: null, filter: null, push: false, state: 'start', err: '', loaded: null, signup: false, recovery: /[#&]type=recovery/.test(location.hash) };
   var sb = null, timer = null;
 
   /* ---------- kleine hulpjes ---------- */
@@ -279,7 +286,8 @@ details[open] .chev { transform: rotate(90deg); }
     $('sub').textContent = S.loaded ? 'Alleen kijken \u00B7 bijgewerkt ' + fTime.format(S.loaded) : 'Alleen kijken';
 
     if (!CFG.SUPABASE_URL || /JOUW/.test(CFG.SUPABASE_URL)) { main.appendChild(el('div', { class: 'card' }, el('p', { text: 'De app is nog niet gekoppeld aan Supabase (config.js).' }))); return; }
-    if (!S.uid) { main.appendChild(loginView()); return; }
+    if (!S.uid) { if (S.recovery) { main.appendChild(el('p', { class: 'muted', text: 'Laden\u2026' })); return; } main.appendChild(loginView()); return; }
+    if (S.recovery) { main.appendChild(recoveryView()); return; }
     if (S.state === 'start') { main.appendChild(el('p', { class: 'muted', text: 'Laden\u2026' })); return; }
     if (S.state === 'noaccess') {
       main.appendChild(el('div', { class: 'card' },
@@ -460,6 +468,46 @@ details[open] .chev { transform: rotate(90deg); }
     return d;
   }
 
+  var EYE_SVG = '<svg class="on" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="off" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.94 17.94A10.9 10.9 0 0 1 12 19c-7 0-11-7-11-7a19.8 19.8 0 0 1 5.06-5.94M9.9 4.24A10.9 10.9 0 0 1 12 5c7 0 11 7 11 7a19.8 19.8 0 0 1-3.17 4.19M14.12 14.12A3 3 0 1 1 9.88 9.88"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+  function pwField(input) {
+    var b = el('button', { class: 'pweye', type: 'button', 'aria-label': 'Wachtwoord tonen', 'aria-pressed': 'false', onclick: function () {
+      var show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      b.setAttribute('aria-pressed', show ? 'true' : 'false');
+      b.setAttribute('aria-label', show ? 'Wachtwoord verbergen' : 'Wachtwoord tonen');
+    } });
+    b.innerHTML = EYE_SVG;
+    return el('div', { class: 'pwwrap' }, input, b);
+  }
+  function forgot(email) {
+    if (!email) { toast('Vul eerst je e-mailadres in en kies dan Wachtwoord vergeten.'); return; }
+    sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname }).then(function (r) {
+      toast(r.error ? 'Mail versturen is niet gelukt. Probeer het over een paar minuten nog eens.' : 'Als dit e-mailadres bekend is, ontvang je een mail met een link om een nieuw wachtwoord te kiezen.');
+    });
+  }
+  function clearHash() { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
+  function setNewPassword(pw) {
+    if (pw.length < 6) { toast('Kies een wachtwoord van minimaal 6 tekens.'); return; }
+    sb.auth.updateUser({ password: pw }).then(function (r) {
+      if (r.error) {
+        toast(/different from the old/i.test(r.error.message) ? 'Kies een ander wachtwoord dan je oude.' : 'Wachtwoord wijzigen is niet gelukt: ' + r.error.message);
+        return;
+      }
+      S.recovery = false; clearHash();
+      toast('Je wachtwoord is aangepast.');
+      S.state = 'start'; S.data = null; render(); watchRealtime(); load(); checkPush();
+    });
+  }
+  function recoveryView() {
+    var pw = el('input', { type: 'password', id: 'rpass', autocomplete: 'new-password', required: true, minlength: '6' });
+    return el('form', { class: 'card login', onsubmit: function (ev) { ev.preventDefault(); setNewPassword(pw.value); } },
+      el('h2', { text: 'Nieuw wachtwoord' }),
+      el('p', { class: 'muted small', text: 'Kies een nieuw wachtwoord voor ' + S.email + '.' }),
+      el('label', { for: 'rpass', text: 'Nieuw wachtwoord (minimaal 6 tekens)' }), pwField(pw),
+      el('div', { class: 'row' },
+        el('button', { class: 'btn', type: 'submit' }, 'Wachtwoord opslaan'),
+        el('button', { class: 'btn ghost', type: 'button', onclick: function () { S.recovery = false; clearHash(); sb.auth.signOut(); } }, 'Annuleren')));
+  }
   function loginView() {
     var email = el('input', { type: 'email', id: 'aemail', autocomplete: 'username', required: true });
     var pw = el('input', { type: 'password', id: 'apass', autocomplete: S.signup ? 'new-password' : 'current-password', required: true, minlength: '6' });
@@ -467,10 +515,11 @@ details[open] .chev { transform: rotate(90deg); }
       el('h2', { text: S.signup ? 'Account maken' : 'Inloggen' }),
       el('p', { class: 'muted small', text: 'Alleen voor de kastelein en de beheerder. Je ziet welke teams thuis spelen en wie er komen. Wijzigen kan hier niet.' }),
       el('label', { for: 'aemail', text: 'E-mailadres' }), email,
-      el('label', { for: 'apass', text: 'Wachtwoord (minimaal 6 tekens)' }), pw,
+      el('label', { for: 'apass', text: 'Wachtwoord (minimaal 6 tekens)' }), pwField(pw),
       el('div', { class: 'row' },
         el('button', { class: 'btn', type: 'submit' }, S.signup ? 'Account maken' : 'Inloggen'),
-        el('button', { class: 'btn ghost', type: 'button', onclick: function () { S.signup = !S.signup; render(); } }, S.signup ? 'Ik heb al een account' : 'Nieuw account')));
+        el('button', { class: 'btn ghost', type: 'button', onclick: function () { S.signup = !S.signup; render(); } }, S.signup ? 'Ik heb al een account' : 'Nieuw account')),
+      S.signup ? null : el('div', null, el('button', { class: 'linkbtn', type: 'button', onclick: function () { forgot(email.value.trim()); } }, 'Wachtwoord vergeten?')));
     return f;
   }
   function toast(t) { alert(t); }
@@ -540,6 +589,10 @@ details[open] .chev { transform: rotate(90deg); }
   render();
   if (!CFG.SUPABASE_URL || /JOUW/.test(CFG.SUPABASE_URL)) return;
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+  if (/error_code=otp_expired|error=access_denied/.test(location.hash)) {
+    clearHash();
+    setTimeout(function () { toast('Deze link is verlopen of al gebruikt. Kies Wachtwoord vergeten om een nieuwe te krijgen.'); }, 500);
+  }
   sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
   /* realtime: een wijziging op een ander toestel (gezien/verwijderd) komt meteen binnen */
   var rt = null;
@@ -556,14 +609,15 @@ details[open] .chev { transform: rotate(90deg); }
   }
   sb.auth.onAuthStateChange(function (ev, session) {
     var id = session ? session.user.id : null;
-    if (id && id === S.uid) return;
+    if (ev === 'PASSWORD_RECOVERY') S.recovery = true;
+    if (id && id === S.uid) { if (ev === 'PASSWORD_RECOVERY') render(); return; }
     S.uid = id; S.email = session ? session.user.email : ''; S.canSwitch = false; S.switchFor = null;
-    watchRealtime();
-    if (id) { S.state = 'start'; S.data = null; render(); setTimeout(function () { load(); checkPush(); }, 0); }
-    else { S.state = 'start'; S.data = null; S.push = false; S.loaded = null; render(); }
+    if (!S.recovery) watchRealtime();
+    if (id) { S.state = 'start'; S.data = null; render(); if (!S.recovery) setTimeout(function () { load(); checkPush(); }, 0); }
+    else { S.recovery = false; S.state = 'start'; S.data = null; S.push = false; S.loaded = null; render(); }
   });
-  document.addEventListener('visibilitychange', function () { if (!document.hidden && S.uid) load(); });
-  window.addEventListener('online', function () { if (S.uid) load(); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && S.uid && !S.recovery) load(); });
+  window.addEventListener('online', function () { if (S.uid && !S.recovery) load(); });
   timer = setInterval(function () { if (!document.hidden && S.uid && S.state === 'ready') load(); }, 30000);
 })();
 </script>
