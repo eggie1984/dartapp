@@ -72,13 +72,6 @@ input[type=email], input[type=password] {
   width: 100%; padding: 12px; font: 16px var(--font-body); color: var(--ink); background: var(--bg);
   border: 1px solid var(--line); border-radius: 10px; margin: 4px 0 12px;
 }
-.pwwrap { position: relative; margin: 4px 0 12px; }
-.pwwrap input { width: 100%; padding: 12px 52px 12px 12px; font: 16px var(--font-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; margin: 0; }
-.pweye { position: absolute; top: 0; right: 0; bottom: 0; width: 48px; display: flex; align-items: center; justify-content: center; background: none; border: 0; padding: 0; color: var(--ink-2); cursor: pointer; border-radius: 0 10px 10px 0; }
-.pweye svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.pweye .off, .pweye[aria-pressed="true"] .on { display: none; }
-.pweye[aria-pressed="true"] .off { display: block; }
-.linkbtn { background: none; border: 0; padding: 8px 0; color: var(--ink); font: 600 15px var(--font-body); text-decoration: underline; text-underline-offset: 3px; min-height: 40px; cursor: pointer; }
 label { font-weight: 600; font-size: 14px; }
 .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .login { max-width: 420px; margin: 32px auto; }
@@ -140,6 +133,28 @@ details[open] .chev { transform: rotate(90deg); }
 .dlbtn { appearance: none; border: 0; background: var(--brand); color: var(--brand-ink); border-radius: 10px; padding: 10px 16px; font: 700 15px var(--font-body); min-height: 44px; cursor: pointer; }
 .dlx { appearance: none; border: 0; background: none; color: var(--ink-2); padding: 10px 8px; font: 500 14px var(--font-body); min-height: 44px; cursor: pointer; text-decoration: underline; }
 .dl .dlhelp { flex-basis: 100%; color: var(--ink); }
+/* bericht aan spelers */
+.cmp label { display: block; margin-top: 12px; }
+.cmp input[type=text], .cmp textarea {
+  width: 100%; padding: 12px; font: 16px var(--font-body); color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 10px; margin-top: 4px;
+}
+.cmp textarea { min-height: 120px; resize: vertical; }
+.cnt { font-size: 12px; color: var(--ink-2); text-align: right; }
+.pick { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.pick .chip { display: inline-flex; align-items: center; gap: 6px; }
+.imgbox { margin-top: 6px; }
+.imgbox img { display: block; max-width: 100%; max-height: 360px; border-radius: 10px; border: 1px solid var(--line); margin-bottom: 8px; }
+.filebtn { position: relative; overflow: hidden; display: inline-flex; align-items: center; }
+.filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.sent { list-style: none; margin: 0; padding: 0; }
+.sent li { border-top: 1px solid var(--line); padding: 12px 0; display: flex; gap: 12px; align-items: flex-start; }
+.sent li:first-child { border-top: 0; }
+.sent img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; flex: none; }
+.sent .sx { flex: 1; min-width: 0; }
+.sent .sx p { margin: 2px 0 0; font-size: 14px; color: var(--ink-2); white-space: pre-line; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.sent .del { appearance: none; border: 0; background: none; color: var(--no); font: 600 14px var(--font-body); text-decoration: underline; cursor: pointer; padding: 8px 0; min-height: 40px; }
+.okbox { background: var(--yes-bg); color: var(--yes); border-radius: 10px; padding: 10px 14px; margin-top: 12px; font-weight: 600; }
 [hidden] { display: none !important; }
 @media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
 </style>
@@ -150,6 +165,7 @@ details[open] .chev { transform: rotate(90deg); }
     <h1>Thuiswedstrijden<small id="sub">Alleen kijken</small></h1>
     <div class="acts">
       <a class="ibtn" id="switchapp" href="index.html" hidden>Wie gooit er mee?</a>
+      <button class="ibtn" id="compose" type="button" hidden aria-pressed="false">Bericht aan spelers</button>
       <button class="ibtn" id="bell" type="button" hidden aria-pressed="false">Meldingen</button>
       <button class="ibtn" id="testalert" type="button" hidden>Testmelding wijzigingen</button>
       <button class="ibtn" id="logout" type="button" hidden>Uitloggen</button>
@@ -174,7 +190,7 @@ details[open] .chev { transform: rotate(90deg); }
   var TZ = 'Europe/Amsterdam';
   var CFG = window.APP_CONFIG || {};
   var $ = function (id) { return document.getElementById(id); };
-  var S = { uid: null, email: '', data: null, filter: null, push: false, state: 'start', err: '', loaded: null, signup: false, recovery: /[#&]type=recovery/.test(location.hash) };
+  var S = { uid: null, email: '', data: null, filter: null, push: false, state: 'start', err: '', loaded: null, signup: false };
   var sb = null, timer = null;
 
   /* ---------- kleine hulpjes ---------- */
@@ -255,15 +271,6 @@ details[open] .chev { transform: rotate(90deg); }
   function load() {
     if (!sb || !S.uid) return;
     checkSwitch();
-    pullState();
-    var uidT = S.uid;
-    sb.from('venue_test_changes').select('*').gte('created_at', new Date(Date.now() - 864e5).toISOString()).then(function (r) {
-      if (uidT !== S.uid || !r || r.error) return;
-      S.testRows = (r.data || []).map(function (t) {
-        return { id: 1e12 + t.id, match_id: 'test-' + t.id, old_start: t.old_start, new_start: t.new_start, old_loc: '', new_loc: '', opp: t.opp, team_name: t.team_name, created_at: t.created_at };
-      });
-      if (S.data) render();
-    }, function () {});
     sb.rpc('venue_overview').then(function (r) {
       if (r.error) {
         if (/Geen toegang/i.test(r.error.message || '')) { S.state = 'noaccess'; S.err = ''; }
@@ -278,6 +285,9 @@ details[open] .chev { transform: rotate(90deg); }
     var main = $('main');
     main.textContent = '';
     $('logout').hidden = !S.uid;
+    $('compose').hidden = !(S.uid && S.state === 'ready');
+    $('compose').setAttribute('aria-pressed', S.view === 'compose' ? 'true' : 'false');
+    $('compose').textContent = S.view === 'compose' ? 'Terug naar wedstrijden' : 'Bericht aan spelers';
     $('switchapp').hidden = !(S.uid && S.canSwitch);
     $('testalert').hidden = !(S.uid && S.isSuper);
     $('bell').hidden = !(S.uid && S.state === 'ready');
@@ -286,8 +296,7 @@ details[open] .chev { transform: rotate(90deg); }
     $('sub').textContent = S.loaded ? 'Alleen kijken \u00B7 bijgewerkt ' + fTime.format(S.loaded) : 'Alleen kijken';
 
     if (!CFG.SUPABASE_URL || /JOUW/.test(CFG.SUPABASE_URL)) { main.appendChild(el('div', { class: 'card' }, el('p', { text: 'De app is nog niet gekoppeld aan Supabase (config.js).' }))); return; }
-    if (!S.uid) { if (S.recovery) { main.appendChild(el('p', { class: 'muted', text: 'Laden\u2026' })); return; } main.appendChild(loginView()); return; }
-    if (S.recovery) { main.appendChild(recoveryView()); return; }
+    if (!S.uid) { main.appendChild(loginView()); return; }
     if (S.state === 'start') { main.appendChild(el('p', { class: 'muted', text: 'Laden\u2026' })); return; }
     if (S.state === 'noaccess') {
       main.appendChild(el('div', { class: 'card' },
@@ -298,6 +307,7 @@ details[open] .chev { transform: rotate(90deg); }
     }
     if (S.err) main.appendChild(el('div', { class: 'banner', role: 'alert' }, S.err + ' ', el('button', { class: 'btn ghost', type: 'button', onclick: load }, 'Opnieuw')));
     if (isIOS() && !standalone()) main.appendChild(el('div', { class: 'hint', text: 'Meldingen op iPhone werken alleen als je deze pagina eerst op je beginscherm zet (deel-knop, dan \u201CZet op beginscherm\u201D) en hem daarvandaan opent.' }));
+    if (S.view === 'compose') { main.appendChild(composeView()); return; }
     if (!S.data) return;
 
     main.appendChild(changesView());
@@ -327,10 +337,10 @@ details[open] .chev { transform: rotate(90deg); }
   }
 
   function changesView() {
-    var allRaw = collapse((S.data.changes || []).concat(S.testRows || []));
+    var allRaw = collapse(S.data.changes || []);
     var gone = dismissed();
     var all = allRaw.filter(function (c) { return !gone[chgKey(c)]; });
-    var seen = seenAt();
+    var seen = parseInt(store('kroeg-seen') || '0', 10);
     var isNew = function (c) { return Date.parse(c.at) > seen; };
     var fresh = all.filter(isNew).length, old = all.length - fresh;
     var list = S.showOld ? all : all.filter(isNew);
@@ -352,7 +362,7 @@ details[open] .chev { transform: rotate(90deg); }
     });
     var row = el('div', { class: 'row', style: 'margin-top:10px' });
     if (list.length > 5) row.appendChild(el('button', { class: 'btn ghost', type: 'button', onclick: function () { S.showAll = !S.showAll; render(); } }, S.showAll ? 'Minder tonen' : 'Alles tonen (' + list.length + ')'));
-    if (fresh) row.appendChild(el('button', { class: 'btn ghost', type: 'button', onclick: function () { markSeen(); S.showAll = false; S.showOld = false; render(); } }, 'Wissen'));
+    if (fresh) row.appendChild(el('button', { class: 'btn ghost', type: 'button', onclick: function () { store('kroeg-seen', String(Date.now())); S.showAll = false; S.showOld = false; render(); } }, 'Wissen'));
     if (old) row.appendChild(el('button', { class: 'btn ghost', type: 'button', onclick: function () { S.showOld = !S.showOld; S.showAll = false; render(); } }, S.showOld ? 'Eerdere verbergen' : 'Eerdere tonen (' + old + ')'));
     if (row.childNodes.length) box.appendChild(row);
     attachSwipe(box);
@@ -363,39 +373,7 @@ details[open] .chev { transform: rotate(90deg); }
   var TRASH = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>';
   function chgKey(c) { return [c.kind, c.team, c.opp, c.at].join('|'); }
   function dismissed() { try { return JSON.parse(store('kroeg-dismissed') || '{}') || {}; } catch (e) { return {}; } }
-  function dismiss(key) { var d = dismissed(); d[key] = Date.now(); store('kroeg-dismissed', JSON.stringify(d)); pushState(); }
-  function seenAt() { return parseInt(store('kroeg-seen') || '0', 10) || 0; }
-  function markSeen() { store('kroeg-seen', String(Date.now())); pushState(); }
-
-  /* ---------- gezien/verwijderd bewaren per account (tabel venue_change_state), zodat telefoon en laptop gelijk lopen ---------- */
-  var syncWarned = false;
-  function syncWarn(t) { if (syncWarned) return; syncWarned = true; toast(t); }
-  function pushState() {
-    if (!sb || !S.uid) return;
-    var cut = Date.now() - 45 * 864e5, g = dismissed();
-    Object.keys(g).forEach(function (k) { if (g[k] < cut) delete g[k]; });
-    store('kroeg-dismissed', JSON.stringify(g));
-    sb.from('venue_change_state').upsert({ user_id: S.uid, seen_at: new Date(seenAt()).toISOString(), dismissed: g, updated_at: new Date().toISOString() })
-      .then(function (r) { if (r && r.error) syncWarn('Sync mislukt: ' + (r.error.message || r.error.code || 'onbekend')); }, function (e) { syncWarn('Sync mislukt: ' + ((e && e.message) || 'geen verbinding')); });
-  }
-  function pullState() {
-    if (!sb || !S.uid) return;
-    var uid = S.uid;
-    sb.from('venue_change_state').select('seen_at,dismissed').eq('user_id', uid).maybeSingle().then(function (r) {
-      if (uid !== S.uid) return;
-      if (r.error) { syncWarn('Sync lezen mislukt: ' + (r.error.message || r.error.code || 'onbekend')); return; }
-      if (!r.data) { if (seenAt() || Object.keys(dismissed()).length) pushState(); return; }
-      var rs = Date.parse(r.data.seen_at) || 0, rg = r.data.dismissed || {};
-      var ls = seenAt(), lg = dismissed(), ms = Math.max(rs, ls), mg = {}, k, changed = false, needPush = false;
-      Object.keys(rg).forEach(function (x) { mg[x] = rg[x]; });
-      Object.keys(lg).forEach(function (x) { if (!(x in mg)) { mg[x] = lg[x]; needPush = true; } });
-      if (ms !== ls) { store('kroeg-seen', String(ms)); changed = true; }
-      if (Object.keys(mg).length !== Object.keys(lg).length) { store('kroeg-dismissed', JSON.stringify(mg)); changed = true; }
-      if (ls > rs) needPush = true;
-      if (needPush) pushState();
-      if (changed) render();
-    }, function () {});
-  }
+  function dismiss(key) { var d = dismissed(); d[key] = Date.now(); store('kroeg-dismissed', JSON.stringify(d)); }
   function attachSwipe(box) {
     var OPEN = 88, sw = null;
     function closeOthers(except) {
@@ -439,6 +417,154 @@ details[open] .chev { transform: rotate(90deg); }
     });
   }
 
+
+  /* ---------- bericht aan spelers (tekst, afbeelding of beide) ---------- */
+  /* Het formulier wordt één keer gemaakt en bij elke verversing opnieuw opgehangen, zodat wat je typt blijft staan. */
+  var C = null;
+  function composeView() {
+    if (C) { drawTeams(); drawSent(); return C.wrap; }
+    C = { teams: null, pick: {}, all: true, file: null, blob: null, url: null, sent: null, busy: false };
+    var title = el('input', { type: 'text', id: 'ctitle', maxlength: '60', autocomplete: 'off', placeholder: 'Bijvoorbeeld: Darttoernooi 2 januari' });
+    var body = el('textarea', { id: 'cbody', maxlength: '1000', placeholder: 'Bijvoorbeeld: Iedereen welkom! Opgeven kan aan de bar.' });
+    var cnt = el('div', { class: 'cnt', text: '0 / 1000' });
+    body.addEventListener('input', function () { cnt.textContent = body.value.length + ' / 1000'; });
+    var file = el('input', { type: 'file', accept: 'image/*', 'aria-label': 'Kies een afbeelding' });
+    var prev = el('div', { class: 'imgbox' });
+    var fileLbl = el('span', { text: 'Afbeelding kiezen' });
+    var rm = el('button', { class: 'btn ghost', type: 'button', hidden: true, onclick: function () { setImage(null); } }, 'Afbeelding weghalen');
+    file.addEventListener('change', function () { setImage(file.files && file.files[0]); });
+    function setImage(f) {
+      if (C.url) URL.revokeObjectURL(C.url);
+      C.file = f || null; C.blob = null; C.url = null; prev.textContent = ''; file.value = '';
+      rm.hidden = !f; fileLbl.textContent = f ? 'Andere afbeelding' : 'Afbeelding kiezen';
+      if (!f) return;
+      shrink(f).then(function (b) {
+        if (C.file !== f) return;
+        C.blob = b; C.url = URL.createObjectURL(b);
+        prev.appendChild(el('img', { src: C.url, alt: 'Voorbeeld van de afbeelding' }));
+      }, function () { toast('Deze afbeelding kan niet worden gelezen. Kies een foto of plaatje (jpg of png).'); setImage(null); });
+    }
+    C.picker = el('div', { class: 'pick' });
+    C.who = el('p', { class: 'muted small', style: 'margin:6px 0 0' });
+    C.msg = el('div', { class: 'okbox', role: 'status', hidden: true });
+    var send = el('button', { class: 'btn', type: 'submit' }, 'Versturen');
+    C.send = send;
+    var form = el('form', { class: 'card cmp', onsubmit: function (ev) { ev.preventDefault(); doSend(title, body, setImage, cnt); } },
+      el('h2', { text: 'Bericht aan spelers' }),
+      el('p', { class: 'muted small', style: 'margin:0', text: 'Stuur een uitnodiging (afbeelding), een mededeling (tekst) of allebei. De spelers krijgen een melding en vinden het bericht onder het belletje in “Wie gooit er mee?”.' }),
+      el('label', { text: 'Naar' }), C.picker, C.who,
+      el('label', { for: 'ctitle', text: 'Titel' }), title,
+      el('label', { for: 'cbody', text: 'Tekst (mag leeg als je een afbeelding stuurt)' }), body, cnt,
+      el('label', { text: 'Afbeelding (niet verplicht)' }),
+      el('div', { class: 'imgbox' }, prev, el('div', { class: 'row' }, el('span', { class: 'btn ghost filebtn' }, fileLbl, file), rm)),
+      el('div', { class: 'row', style: 'margin-top:16px' }, send),
+      C.msg);
+    C.sentBox = el('section', { class: 'card', style: 'margin-top:16px' });
+    C.wrap = el('div', null, form, C.sentBox);
+    loadCompose();
+    return C.wrap;
+  }
+  function loadCompose() {
+    sb.rpc('venue_teams').then(function (r) { if (!r.error) { C.teams = r.data || []; drawTeams(); } else { C.teams = []; drawTeams(r.error); } });
+    sb.from('venue_messages').select('id,title,body,image_path,to_teams,created_at').order('created_at', { ascending: false }).limit(20)
+      .then(function (r) { C.sent = r.error ? [] : r.data; C.sentErr = !!r.error; drawSent(); });
+  }
+  function chosen() { return C.all ? (C.teams || []) : (C.teams || []).filter(function (t) { return C.pick[t.id]; }); }
+  function drawTeams(err) {
+    var p = C.picker; p.textContent = '';
+    if (!C.teams) { p.appendChild(el('span', { class: 'muted small', text: 'Teams laden…' })); return; }
+    if (err || !C.teams.length) { p.appendChild(el('span', { class: 'muted small', text: err ? 'De teams konden niet worden geladen. Is 9-kastelein-bericht.sql al uitgevoerd?' : 'Er zijn geen teams.' })); C.who.textContent = ''; return; }
+    p.appendChild(el('button', { class: 'chip', type: 'button', 'aria-pressed': C.all ? 'true' : 'false', onclick: function () { C.all = true; C.pick = {}; drawTeams(); } }, 'Alle teams'));
+    C.teams.forEach(function (t) {
+      var on = !C.all && !!C.pick[t.id];
+      p.appendChild(el('button', { class: 'chip', type: 'button', 'aria-pressed': on ? 'true' : 'false', onclick: function () {
+        if (C.all) { C.all = false; C.pick = {}; }
+        if (C.pick[t.id]) delete C.pick[t.id]; else C.pick[t.id] = true;
+        if (!Object.keys(C.pick).length) C.all = true;
+        drawTeams();
+      } }, el('span', { class: 'dot', style: 'background:' + hueColor(t.hue), 'aria-hidden': 'true' }), t.name));
+    });
+    var ts = chosen(), n = ts.reduce(function (a, t) { return a + (t.members || 0); }, 0);
+    C.who.textContent = (C.all ? 'Alle ' + ts.length + ' teams' : ts.length + (ts.length === 1 ? ' team' : ' teams')) + ' · ' + n + (n === 1 ? ' speler' : ' spelers') + ' met de app';
+  }
+  function drawSent() {
+    var b = C.sentBox; b.textContent = '';
+    b.appendChild(el('h2', { text: 'Verstuurd' }));
+    if (!C.sent) { b.appendChild(el('p', { class: 'muted small', text: 'Laden…' })); return; }
+    if (!C.sent.length) { b.appendChild(el('p', { class: 'muted small', text: C.sentErr ? 'Kon de verstuurde berichten niet laden.' : 'Je hebt nog geen berichten verstuurd.' })); return; }
+    var names = {}; (C.teams || []).forEach(function (t) { names[t.id] = t.name; });
+    var ul = el('ul', { class: 'sent' });
+    C.sent.forEach(function (m) {
+      var to = !m.to_teams ? 'Alle teams' : m.to_teams.map(function (id) { return names[id] || 'team'; }).join(', ');
+      ul.appendChild(el('li', null,
+        m.image_path ? el('img', { src: sb.storage.from('kroeg').getPublicUrl(m.image_path).data.publicUrl, alt: '' }) : null,
+        el('div', { class: 'sx' },
+          el('strong', { text: m.title }),
+          el('div', { class: 'small muted', text: fShort.format(new Date(m.created_at)) + ' · ' + to }),
+          m.body ? el('p', { text: m.body }) : null,
+          el('button', { class: 'del', type: 'button', onclick: function () { removeSent(m); } }, 'Verwijderen bij iedereen'))));
+    });
+    b.appendChild(ul);
+  }
+  function removeSent(m) {
+    if (!window.confirm('Bericht “' + m.title + '” verwijderen? Het verdwijnt dan ook bij alle spelers.')) return;
+    sb.from('venue_messages').delete().eq('id', m.id).then(function (r) {
+      if (r.error) { toast('Verwijderen is niet gelukt.'); return; }
+      if (m.image_path) sb.storage.from('kroeg').remove([m.image_path]).catch(function () {});
+      C.sent = C.sent.filter(function (x) { return x.id !== m.id; }); drawSent();
+    }, function () { toast('Verwijderen is niet gelukt.'); });
+  }
+  /* foto verkleinen tot max. 1600 pixels en opslaan als jpg: snel versturen, weinig data voor de spelers */
+  function shrink(f) {
+    return new Promise(function (ok, fail) {
+      var img = new Image(), u = URL.createObjectURL(f);
+      img.onload = function () {
+        URL.revokeObjectURL(u);
+        var max = 1600, w = img.naturalWidth, h = img.naturalHeight, k = Math.min(1, max / Math.max(w, h));
+        var c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
+        var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+        c.toBlob(function (b) { b ? ok(b) : fail(); }, 'image/jpeg', 0.85);
+      };
+      img.onerror = function () { URL.revokeObjectURL(u); fail(); };
+      img.src = u;
+    });
+  }
+  function rid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID().replace(/-/g, '');
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  }
+  function doSend(title, body, setImage, cnt) {
+    if (C.busy) return;
+    var t = title.value.trim(), b = body.value.trim();
+    if (!t) { toast('Geef het bericht een titel.'); title.focus(); return; }
+    if (!b && !C.file) { toast('Schrijf een tekst of kies een afbeelding.'); body.focus(); return; }
+    if (C.file && !C.blob) { toast('De afbeelding wordt nog klaargemaakt. Probeer het zo nog eens.'); return; }
+    var ts = chosen();
+    if (!ts.length) { toast('Kies minstens één team.'); return; }
+    var n = ts.reduce(function (a, x) { return a + (x.members || 0); }, 0);
+    if (!window.confirm('Versturen naar ' + (C.all ? 'alle teams' : ts.map(function (x) { return x.name; }).join(', ')) + ' (' + n + ' spelers met de app)?')) return;
+    C.busy = true; C.send.disabled = true; C.send.textContent = 'Bezig met versturen…'; C.msg.hidden = true;
+    var path = C.blob ? 'berichten/' + rid() + '.jpg' : null;
+    var up = path ? sb.storage.from('kroeg').upload(path, C.blob, { contentType: 'image/jpeg', upsert: false }).then(function (r) { if (r.error) throw new Error('upload'); }) : Promise.resolve();
+    up.then(function () {
+      return sb.functions.invoke('venue-broadcast', { body: { title: t, body: b, image_path: path, to_teams: C.all ? null : ts.map(function (x) { return x.id; }) } });
+    }).then(function (r) {
+      if (r.error) {
+        if (path) sb.storage.from('kroeg').remove([path]).catch(function () {});
+        var ctx = r.error.context;
+        return (ctx && ctx.json ? ctx.json().catch(function () { return {}; }) : Promise.resolve({})).then(function (j) { throw new Error(j.error || 'Versturen is niet gelukt.'); });
+      }
+      var d = r.data || {};
+      title.value = ''; body.value = ''; cnt.textContent = '0 / 1000'; setImage(null);
+      C.msg.textContent = 'Verstuurd naar ' + d.members + ' spelers in ' + d.teams + (d.teams === 1 ? ' team' : ' teams') + '. ' +
+        (d.reached || 0) + ' van hen kregen direct een melding; de rest ziet het bij het openen van de app.';
+      C.msg.hidden = false;
+      loadCompose();
+    }).catch(function (e) {
+      toast(e && e.message === 'upload' ? 'De afbeelding uploaden is niet gelukt. Controleer je verbinding.' : (e && e.message) || 'Versturen is niet gelukt.');
+    }).then(function () { C.busy = false; C.send.disabled = false; C.send.textContent = 'Versturen'; });
+  }
+
   function matchView(m) {
     // Zelfde regel als de spelersapp: geen antwoord telt als "komt"; alleen "komt later" en "kan niet" wijken af.
     var g = { yes: [], late: [], no: [] };
@@ -468,46 +594,6 @@ details[open] .chev { transform: rotate(90deg); }
     return d;
   }
 
-  var EYE_SVG = '<svg class="on" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg><svg class="off" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.94 17.94A10.9 10.9 0 0 1 12 19c-7 0-11-7-11-7a19.8 19.8 0 0 1 5.06-5.94M9.9 4.24A10.9 10.9 0 0 1 12 5c7 0 11 7 11 7a19.8 19.8 0 0 1-3.17 4.19M14.12 14.12A3 3 0 1 1 9.88 9.88"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
-  function pwField(input) {
-    var b = el('button', { class: 'pweye', type: 'button', 'aria-label': 'Wachtwoord tonen', 'aria-pressed': 'false', onclick: function () {
-      var show = input.type === 'password';
-      input.type = show ? 'text' : 'password';
-      b.setAttribute('aria-pressed', show ? 'true' : 'false');
-      b.setAttribute('aria-label', show ? 'Wachtwoord verbergen' : 'Wachtwoord tonen');
-    } });
-    b.innerHTML = EYE_SVG;
-    return el('div', { class: 'pwwrap' }, input, b);
-  }
-  function forgot(email) {
-    if (!email) { toast('Vul eerst je e-mailadres in en kies dan Wachtwoord vergeten.'); return; }
-    sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname }).then(function (r) {
-      toast(r.error ? 'Mail versturen is niet gelukt. Probeer het over een paar minuten nog eens.' : 'Als dit e-mailadres bekend is, ontvang je een mail met een link om een nieuw wachtwoord te kiezen.');
-    });
-  }
-  function clearHash() { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
-  function setNewPassword(pw) {
-    if (pw.length < 6) { toast('Kies een wachtwoord van minimaal 6 tekens.'); return; }
-    sb.auth.updateUser({ password: pw }).then(function (r) {
-      if (r.error) {
-        toast(/different from the old/i.test(r.error.message) ? 'Kies een ander wachtwoord dan je oude.' : 'Wachtwoord wijzigen is niet gelukt: ' + r.error.message);
-        return;
-      }
-      S.recovery = false; clearHash();
-      toast('Je wachtwoord is aangepast.');
-      S.state = 'start'; S.data = null; render(); watchRealtime(); load(); checkPush();
-    });
-  }
-  function recoveryView() {
-    var pw = el('input', { type: 'password', id: 'rpass', autocomplete: 'new-password', required: true, minlength: '6' });
-    return el('form', { class: 'card login', onsubmit: function (ev) { ev.preventDefault(); setNewPassword(pw.value); } },
-      el('h2', { text: 'Nieuw wachtwoord' }),
-      el('p', { class: 'muted small', text: 'Kies een nieuw wachtwoord voor ' + S.email + '.' }),
-      el('label', { for: 'rpass', text: 'Nieuw wachtwoord (minimaal 6 tekens)' }), pwField(pw),
-      el('div', { class: 'row' },
-        el('button', { class: 'btn', type: 'submit' }, 'Wachtwoord opslaan'),
-        el('button', { class: 'btn ghost', type: 'button', onclick: function () { S.recovery = false; clearHash(); sb.auth.signOut(); } }, 'Annuleren')));
-  }
   function loginView() {
     var email = el('input', { type: 'email', id: 'aemail', autocomplete: 'username', required: true });
     var pw = el('input', { type: 'password', id: 'apass', autocomplete: S.signup ? 'new-password' : 'current-password', required: true, minlength: '6' });
@@ -515,11 +601,10 @@ details[open] .chev { transform: rotate(90deg); }
       el('h2', { text: S.signup ? 'Account maken' : 'Inloggen' }),
       el('p', { class: 'muted small', text: 'Alleen voor de kastelein en de beheerder. Je ziet welke teams thuis spelen en wie er komen. Wijzigen kan hier niet.' }),
       el('label', { for: 'aemail', text: 'E-mailadres' }), email,
-      el('label', { for: 'apass', text: 'Wachtwoord (minimaal 6 tekens)' }), pwField(pw),
+      el('label', { for: 'apass', text: 'Wachtwoord (minimaal 6 tekens)' }), pw,
       el('div', { class: 'row' },
         el('button', { class: 'btn', type: 'submit' }, S.signup ? 'Account maken' : 'Inloggen'),
-        el('button', { class: 'btn ghost', type: 'button', onclick: function () { S.signup = !S.signup; render(); } }, S.signup ? 'Ik heb al een account' : 'Nieuw account')),
-      S.signup ? null : el('div', null, el('button', { class: 'linkbtn', type: 'button', onclick: function () { forgot(email.value.trim()); } }, 'Wachtwoord vergeten?')));
+        el('button', { class: 'btn ghost', type: 'button', onclick: function () { S.signup = !S.signup; render(); } }, S.signup ? 'Ik heb al een account' : 'Nieuw account')));
     return f;
   }
   function toast(t) { alert(t); }
@@ -543,13 +628,7 @@ details[open] .chev { transform: rotate(90deg); }
   function checkPush() {
     if (!pushOK()) return;
     navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); })
-      .then(function (sub) {
-        S.push = !!sub; render();
-        if (sub && S.uid && Notification.permission === 'granted') {
-          var j = sub.toJSON();
-          sb.rpc('claim_push_subscription', { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth });
-        }
-      }).catch(function () {});
+      .then(function (sub) { S.push = !!sub; render(); }).catch(function () {});
   }
   function togglePush() {
     if (!pushOK()) { toast('Meldingen werken hier niet. Op iPhone: zet de pagina eerst op je beginscherm en open hem daarvandaan.'); return; }
@@ -574,12 +653,12 @@ details[open] .chev { transform: rotate(90deg); }
 
   /* ---------- start ---------- */
   $('bell').addEventListener('click', togglePush);
+  $('compose').addEventListener('click', function () { S.view = S.view === 'compose' ? null : 'compose'; render(); window.scrollTo(0, 0); });
   $('testalert').addEventListener('click', function () {
-    var all = window.confirm('Testmelding sturen.\n\nOK = naar alle toestellen van jou en de kastelein(s)\nAnnuleren = alleen naar jouw eigen toestellen');
+    var all = window.confirm('Testmelding sturen.\n\nOK = ook naar de kastelein(s)\nAnnuleren = alleen naar mij');
     var b = $('testalert'); b.disabled = true;
     sb.functions.invoke('venue-alert', { body: { test: true, all: all } }).then(function (r) {
       b.disabled = false;
-      if (!r.error) load();
       if (r.error) toast('Testmelding mislukt.');
       else if (r.data && r.data.sent === 0) toast('Er is geen toestel van jou aangemeld voor meldingen. Zet eerst "Meldingen aanzetten" aan.');
       else toast(all ? 'Testmelding verstuurd naar ' + r.data.sent + ' toestel(len), kastelein(s) inbegrepen.' : 'Testmelding verstuurd.');
@@ -589,36 +668,16 @@ details[open] .chev { transform: rotate(90deg); }
   render();
   if (!CFG.SUPABASE_URL || /JOUW/.test(CFG.SUPABASE_URL)) return;
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
-  if (/error_code=otp_expired|error=access_denied/.test(location.hash)) {
-    clearHash();
-    setTimeout(function () { toast('Deze link is verlopen of al gebruikt. Kies Wachtwoord vergeten om een nieuwe te krijgen.'); }, 500);
-  }
   sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
-  /* realtime: een wijziging op een ander toestel (gezien/verwijderd) komt meteen binnen */
-  var rt = null;
-  function watchRealtime() {
-    if (rt) { try { sb.removeChannel(rt); } catch (e) {} rt = null; }
-    if (!S.uid) return;
-    var uid = S.uid;
-    rt = sb.channel('vcs-' + uid)
-      .on('postgres_changes',
-          { event: '*', schema: 'public', table: 'venue_change_state', filter: 'user_id=eq.' + uid },
-          function () { pullState(); })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'venue_test_changes' }, function () { load(); })
-      .subscribe();
-  }
   sb.auth.onAuthStateChange(function (ev, session) {
     var id = session ? session.user.id : null;
-    if (ev === 'PASSWORD_RECOVERY') S.recovery = true;
-    if (id && id === S.uid) { if (ev === 'PASSWORD_RECOVERY') render(); return; }
-    S.uid = id; S.email = session ? session.user.email : ''; S.canSwitch = false; S.switchFor = null;
-    if (!S.recovery) watchRealtime();
-    if (id) { S.state = 'start'; S.data = null; render(); if (!S.recovery) setTimeout(function () { load(); checkPush(); }, 0); }
-    else { S.recovery = false; S.state = 'start'; S.data = null; S.push = false; S.loaded = null; render(); }
+    if (id && id === S.uid) return;
+    S.uid = id; S.email = session ? session.user.email : ''; S.canSwitch = false; S.switchFor = null; S.view = null; C = null;
+    if (id) { S.state = 'start'; S.data = null; render(); setTimeout(function () { load(); checkPush(); }, 0); }
+    else { S.state = 'start'; S.data = null; S.push = false; S.loaded = null; render(); }
   });
-  document.addEventListener('visibilitychange', function () { if (!document.hidden && S.uid && !S.recovery) load(); });
-  window.addEventListener('online', function () { if (S.uid && !S.recovery) load(); });
-  timer = setInterval(function () { if (!document.hidden && S.uid && S.state === 'ready') load(); }, 30000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && S.uid) load(); });
+  timer = setInterval(function () { if (!document.hidden && S.uid && S.state === 'ready') load(); }, 60000);
 })();
 </script>
 <script>

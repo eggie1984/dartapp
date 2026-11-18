@@ -4,7 +4,7 @@ self.addEventListener('fetch', () => {}); // nodig zodat Chrome de app als insta
 self.addEventListener('push', e => {
   let d = {}; try { d = e.data.json(); } catch (_) {}
   e.waitUntil(self.registration.showNotification(d.title || "Wie gooit er mee?", {
-    body: d.body || '', icon: 'icon-192.png', badge: 'icon-192.png', tag: d.tag, data: { url: d.url || './' } }));
+    body: d.body || '', icon: 'icon-192.png', badge: 'icon-192.png', tag: d.tag, image: d.image || undefined, data: { url: d.url || './' } }));
 });
 self.addEventListener('notificationclick', e => {
   e.notification.close();
