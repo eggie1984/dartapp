@@ -734,7 +734,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
       el.innerHTML = '<section class="who"><h2>Sluit aan bij je team</h2><p>Vul de teamcode in die je van je captain hebt gekregen.</p>' +
         '<form id="joinform" class="joinbox"><input id="joincode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="Teamcode" value="' + esc(saved) + '" required>' +
         '<div class="acts"><button class="btn" type="submit">Aansluiten</button></div></form></section>' +
-        '<div class="acts"><button class="linkbtn" data-act="logout" data-fk="logout">Uitloggen</button></div>';
+        '<div class="acts"><button class="linkbtn" data-act="logout" data-fk="logout">Uitloggen</button><small class="app-versie" style="opacity:.6;align-self:center;font-size:12px"></small></div>';
       return;
     }
     if (state.viewTeam) { el.innerHTML = ''; return; }
@@ -749,7 +749,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
       h = '<div class="whoami"><span>Je vult in als <strong>' + esc(player(me).short) + '</strong>' + (state.isCaptain ? ' (captain)' : '') + '</span>' +
         '<button class="linkbtn" data-act="unclaim-self" data-fk="unclaim-self">Dit ben ik niet</button></div>';
     }
-    h += '<div class="acts"><button class="linkbtn" data-act="push" data-fk="push">' + (state.push ? 'Meldingen staan aan \u2713' : 'Meldingen aanzetten') + '</button><button class="linkbtn" data-act="logout" data-fk="logout">Uitloggen</button></div>';
+    h += '<div class="acts"><button class="linkbtn" data-act="push" data-fk="push">' + (state.push ? 'Meldingen staan aan \u2713' : 'Meldingen aanzetten') + '</button><button class="linkbtn" data-act="logout" data-fk="logout">Uitloggen</button><small class="app-versie" style="opacity:.6;align-self:center;font-size:12px"></small></div>';
     el.innerHTML = h;
   }
 
@@ -1700,7 +1700,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
 
   var CFG = window.APP_CONFIG || {};
   render();
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(function () {});
   if (!CFG.SUPABASE_URL || /JOUW/.test(CFG.SUPABASE_URL)) { state.dbState = 'none'; render(); }
   else {
     sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
@@ -3006,4 +3006,5 @@ return R("index");})();
   });
 })();
 </script>
+<script src="update.js"></script>
 </body></html>

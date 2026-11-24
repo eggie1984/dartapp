@@ -169,6 +169,7 @@ details[open] .chev { transform: rotate(90deg); }
       <button class="ibtn" id="bell" type="button" hidden aria-pressed="false">Meldingen</button>
       <button class="ibtn" id="testalert" type="button" hidden>Testmelding wijzigingen</button>
       <button class="ibtn" id="logout" type="button" hidden>Uitloggen</button>
+      <small class="app-versie" style="opacity:.6;align-self:center;font-size:12px"></small>
     </div>
   </div>
 </header>
@@ -667,7 +668,7 @@ details[open] .chev { transform: rotate(90deg); }
   $('logout').addEventListener('click', function () { if (sb) sb.auth.signOut(); });
   render();
   if (!CFG.SUPABASE_URL || /JOUW/.test(CFG.SUPABASE_URL)) return;
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(function () {});
   sb = supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
   sb.auth.onAuthStateChange(function (ev, session) {
     var id = session ? session.user.id : null;
@@ -715,5 +716,6 @@ details[open] .chev { transform: rotate(90deg); }
   });
 })();
 </script>
+<script src="update.js"></script>
 </body>
 </html>
