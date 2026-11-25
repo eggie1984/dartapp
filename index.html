@@ -1734,8 +1734,11 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     var p = '='.repeat((4 - s.length % 4) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/'));
     return Uint8Array.from(b, function (ch) { return ch.charCodeAt(0); });
   }
+  /* Na inloggen: heeft deze telefoon al eens toestemming gegeven voor meldingen,
+     dan meldingen meteen (stil) aanzetten voor het account dat nu is ingelogd. */
   function checkPush() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if (window.Notification && Notification.permission === 'granted') { enablePush(true); return; }
     navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); })
       .then(function (sub) { state.push = !!sub; render(); }).catch(function () {});
   }
@@ -1743,10 +1746,10 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     var j = sub.toJSON();
     return run(sb.from('push_subscriptions').upsert({ endpoint: j.endpoint, user_id: state.uid, p256dh: j.keys.p256dh, auth: j.keys.auth }, { onConflict: 'endpoint' }));
   }
-  function enablePush() {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) { toast('Meldingen werken hier niet. Op iPhone: zet de app eerst op je beginscherm en open hem daarvandaan.'); return; }
-    Notification.requestPermission().then(function (perm) {
-      if (perm !== 'granted') { toast('Meldingen zijn niet toegestaan. Zet ze aan in de instellingen van je telefoon of browser.'); return; }
+  function enablePush(silent) {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) { if (!silent) toast('Meldingen werken hier niet. Op iPhone: zet de app eerst op je beginscherm en open hem daarvandaan.'); return; }
+    (silent ? Promise.resolve(Notification.permission) : Notification.requestPermission()).then(function (perm) {
+      if (perm !== 'granted') { if (!silent) toast('Meldingen zijn niet toegestaan. Zet ze aan in de instellingen van je telefoon of browser.'); return; }
       return navigator.serviceWorker.ready.then(function (reg) {
         function fresh() { return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64(CFG.VAPID_PUBLIC_KEY) }); }
         return reg.pushManager.getSubscription().then(function (s) { return s || fresh(); }).then(function (sub) {
@@ -1755,8 +1758,8 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
             return sub.unsubscribe().then(fresh).then(savePushSub);
           });
         });
-      }).then(function () { state.push = true; toast('Meldingen staan aan.'); render(); });
-    }).catch(function () { toast('Meldingen aanzetten is niet gelukt.'); });
+      }).then(function () { state.push = true; if (!silent) toast('Meldingen staan aan.'); render(); });
+    }).catch(function () { state.push = false; render(); if (!silent) toast('Meldingen aanzetten is niet gelukt.'); });
   }
   /* Bij uitloggen dit toestel afmelden, zodat de volgende gebruiker geen meldingen van jouw account krijgt. */
   function logout() {
