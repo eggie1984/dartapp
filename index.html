@@ -1453,7 +1453,43 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   }
 
   /* ---------- Supabase: laden, inloggen, meldingen ---------- */
-  var rt = null, channel = null;
+  var rt = null, rm = null, rr = null, channel = null, channelTeam;
+  /* live bijwerken: alleen luisteren naar het team dat je bekijkt */
+  function later(fn, t, ms) { clearTimeout(t); return setTimeout(fn, ms); }
+  function onAnswer(p) {
+    if (p.eventType === 'DELETE') {
+      /* bij verwijderen stuurt Supabase alleen match_id en player_id mee */
+      var o = p.old || {}, e = state.answers['p_' + o.player_id];
+      if (e && e.st && e.st[o.match_id]) { delete e.st[o.match_id]; rr = later(render, rr, 100); }
+      return;
+    }
+    var v = p.new || {};
+    if (!state.team || v.team_id !== state.team.id) return;
+    var k = 'p_' + v.player_id, t = Date.parse(v.updated_at), cur = state.answers[k] && state.answers[k].st[v.match_id];
+    if (cur && cur.t > t) return; /* we hebben al een nieuwer antwoord */
+    (state.answers[k] = state.answers[k] || { st: {} }).st[v.match_id] = { s: v.status, t: t };
+    rr = later(render, rr, 100);
+  }
+  function listen(tid) {
+    if (!sb || channelTeam === tid) return;
+    if (channel) sb.removeChannel(channel);
+    channelTeam = tid;
+    function full() { rt = later(loadAll, rt, 300); }
+    function msgs() { rm = later(loadMessages, rm, 300); }
+    var ch = sb.channel('live-' + (tid || 'geen') + '-' + Date.now());
+    ['teams', 'members'].forEach(function (t) { ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, full); });
+    ['messages', 'venue_messages'].forEach(function (t) { ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, msgs); });
+    if (tid) {
+      var f = 'team_id=eq.' + tid;
+      ['matches', 'players'].forEach(function (t) { ch.on('postgres_changes', { event: '*', schema: 'public', table: t, filter: f }, full); });
+      /* verwijderen kan Supabase niet filteren, die vangen we apart op */
+      ['matches', 'players'].forEach(function (t) { ch.on('postgres_changes', { event: 'DELETE', schema: 'public', table: t }, full); });
+      ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'answers', filter: f }, onAnswer);
+      ch.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'answers', filter: f }, onAnswer);
+      ch.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'answers' }, onAnswer);
+    }
+    channel = ch.subscribe();
+  }
   function applyTheme() {
     var h = state.team && state.team.hue;
     var root = document.documentElement;
@@ -1492,12 +1528,14 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
       state.otherTeams = r[1].data.filter(function (t) { return t.id !== state.myTeam && t.active !== false; }).sort(function (a, b) { return a.name.localeCompare(b.name, 'nl'); });
       var vt = state.viewTeam || null;           /* beheerder van de hele app bekijkt een ander team */
       if (!mine && !vt) {
+        listen(null);
         resetTeamState(); state.isSuper = r[2].data.length > 0;
         state.claimsReady = true; state.dbState = 'ok'; state.canWrite = true;
         render(); if (state.isSuper) loadTeams();
         return;
       }
       var tid = vt || mine.team_id;
+      listen(tid);
       state.team = r[1].data.filter(function (t) { return t.id === tid; })[0] || null;
       TEAM = state.team ? state.team.name : ''; MIN = state.team ? state.team.min_players : 4;
       applyTheme();
@@ -1735,8 +1773,11 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
       if (id) {
         state.dbState = 'pending'; render();
         setTimeout(function () { loadAll(); checkPush(); }, 0);
-        if (!channel) channel = sb.channel('alles').on('postgres_changes', { event: '*', schema: 'public' }, function () { clearTimeout(rt); rt = setTimeout(loadAll, 300); }).subscribe();
-      } else { state.dbState = 'none'; resetTeamState(); render(); }
+      } else {
+        if (channel) sb.removeChannel(channel);
+        channel = null; channelTeam = undefined;
+        state.dbState = 'none'; resetTeamState(); render();
+      }
     });
     document.addEventListener('visibilitychange', function () { if (!document.hidden && state.uid) loadAll(); });
   }
