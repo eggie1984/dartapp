@@ -386,7 +386,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
             <select id="mhome"><option value="">Nog onbekend</option><option value="1">Thuis</option><option value="0">Uit</option></select>
             <label for="mloc">Locatie</label>
             <input type="text" id="mloc" maxlength="200" autocomplete="off" placeholder="Café, straat 1, plaats">
-            <label><input type="checkbox" id="mnotify" style="width:auto;min-height:0;margin-right:8px">Stuur het team een melding over deze wijziging</label>
+            <label><input type="checkbox" id="mnotify" checked style="width:auto;min-height:0;margin-right:8px">Stuur het team een melding over deze wijziging</label>
             <div class="acts"><button class="btn" type="submit" id="msave">Wedstrijd toevoegen</button><button type="button" class="linkbtn" id="mcancel" data-act="match-cancel" hidden>Annuleer wijziging</button></div>
           </form>
           <details id="mdet"><summary id="mdsum">Alle wedstrijden</summary><ul class="links" id="matchlist"></ul></details>
@@ -1120,14 +1120,27 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     }
     renderMsgTo();
   }
+  /* Edge Function aanroepen met een verse inlogsleutel. Is de sleutel toch verlopen (401),
+     dan eerst vernieuwen en het nog één keer proberen. */
+  function callFn(name, body) {
+    function go(session) {
+      var h = session && session.access_token ? { Authorization: 'Bearer ' + session.access_token } : undefined;
+      return sb.functions.invoke(name, { body: body, headers: h });
+    }
+    return sb.auth.getSession().then(function (s) { return go(s.data && s.data.session); }).then(function (r) {
+      var st = r.error && r.error.context && r.error.context.status;
+      if (st !== 401) return r;
+      return sb.auth.refreshSession().then(function (s) { return go(s.data && s.data.session); });
+    });
+  }
   function sendToPlayers(title, body, ids) {
-    return sb.functions.invoke('send-to-players', { body: { title: title, body: body, player_ids: ids } }).then(function (r) {
+    return callFn('send-to-players', { title: title, body: body, player_ids: ids }).then(function (r) {
       if (r.error) throw r.error;
       return r.data || {};
     });
   }
   function sendMessage(title, body) {
-    return sb.functions.invoke('send-message', { body: { title: title, body: body } }).then(function (r) {
+    return callFn('send-message', { title: title, body: body }).then(function (r) {
       if (r.error) throw r.error;
       return r.data || {};
     });
@@ -1145,7 +1158,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     var notify = $('mnotify').checked || nowKnown;
     run(sb.from('matches').upsert(rec)).then(function () {
       toast(isNew ? 'Wedstrijd toegevoegd.' : 'Wijziging opgeslagen.');
-      resetMatchForm(); $('mnotify').checked = false;
+      resetMatchForm(); $('mnotify').checked = true;
       if (notify) {
         var body = matchWhen(rec.start) + (rec.opp ? ' tegen ' + rec.opp : '') + (rec.home === true ? ' (thuis)' : rec.home === false ? ' (uit)' : '');
         return sendMessage(nowKnown ? 'Wedstrijd bekend' : isNew ? 'Nieuwe wedstrijd' : 'Wedstrijd gewijzigd', body).catch(function () { toast('Opgeslagen, maar de melding is niet verstuurd.'); });
@@ -1376,7 +1389,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     } else if (act === 'signup') { auth(true);
     } else if (act === 'msgto') { toggleMsgTo(t.getAttribute('data-pid'));
     } else if (act === 'testpush') {
-      sb.functions.invoke('send-reminders', { body: { test: true } }).then(function (r) { toast(r.error ? 'Testmelding mislukt.' : 'Testmelding verstuurd.'); });
+      callFn('send-reminders', { test: true }).then(function (r) { toast(r.error ? 'Testmelding mislukt.' : 'Testmelding verstuurd.'); });
     } else if (act === 'match-edit') { editMatch(t.getAttribute('data-mid'));
     } else if (act === 'match-cancel') { resetMatchForm();
     } else if (act === 'match-del-ask') { state.confirmMatch = t.getAttribute('data-mid'); render();
