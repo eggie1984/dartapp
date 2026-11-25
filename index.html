@@ -670,7 +670,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   }
   function writeAnswer(mid, pid, s) {
     if (!sb || !state.uid) { toast('Log in om je antwoord op te slaan.'); return; }
-    if (state.viewTeam) { toast('Je bekijkt een ander team.'); return; }
+    if (state.viewTeam && !state.isSuper) { toast('Je bekijkt een ander team.'); return; }
     if (pid !== meId() && !state.isCaptain) { toast('Je kunt alleen je eigen antwoord aanpassen.'); return; }
     var t = Date.now(), k = 'p_' + pid;
     (state.answers[k] = state.answers[k] || { st: {} }).st[mid] = { s: s, t: t };
@@ -746,7 +746,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
           return '<button class="chip" data-act="claim" data-pid="' + esc(p.id) + '" data-fk="who:' + esc(p.id) + '"' + (taken ? ' disabled' : '') + '>' + esc(p.short) + (taken ? '<small>gekozen</small>' : '') + '</button>';
         }).join('') + '</div></section>';
     } else {
-      h = '<div class="whoami"><span>Je vult in als <strong>' + esc(player(me).short) + '</strong>' + (state.isCaptain ? ' (captain)' : '') + '</span>' +
+      h = '<div class="whoami"><span>Je vult in als <strong>' + esc(player(me).short) + '</strong>' + (state.isSuper ? ' (beheerder app)' : state.isCaptain ? ' (captain)' : '') + '</span>' +
         '<button class="linkbtn" data-act="unclaim-self" data-fk="unclaim-self">Dit ben ik niet</button></div>';
     }
     h += '<div class="acts"><button class="linkbtn" data-act="push" data-fk="push">' + (state.push ? 'Meldingen staan aan \u2713' : 'Meldingen aanzetten') + '</button><button class="linkbtn" data-act="logout" data-fk="logout">Uitloggen</button><small class="app-versie" style="opacity:.6;align-self:center;font-size:12px"></small></div>';
@@ -1134,13 +1134,13 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     });
   }
   function sendToPlayers(title, body, ids) {
-    return callFn('send-to-players', { title: title, body: body, player_ids: ids }).then(function (r) {
+    return callFn('send-to-players', { title: title, body: body, player_ids: ids, team_id: state.team && state.team.id }).then(function (r) {
       if (r.error) throw r.error;
       return r.data || {};
     });
   }
   function sendMessage(title, body) {
-    return callFn('send-message', { title: title, body: body }).then(function (r) {
+    return callFn('send-message', { title: title, body: body, team_id: state.team && state.team.id }).then(function (r) {
       if (r.error) throw r.error;
       return r.data || {};
     });
@@ -1173,7 +1173,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     render();
   }
   function resetSeason() {
-    if (!state.team || !state.isCaptain || state.viewTeam) return;
+    if (!state.team || !state.isCaptain || (state.viewTeam && !state.isSuper)) return;
     var tid = state.team.id;
     state.seasonAsk = false; state.expanded = {}; resetMatchForm();
     run(sb.from('answers').delete().eq('team_id', tid))
@@ -1554,7 +1554,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
       applyTheme();
       var c = {};
       r[0].data.forEach(function (v) { if (v.team_id === tid) c[v.user_id] = { p: v.player_id, a: !!v.is_admin }; });
-      state.claims = c; state.isCaptain = vt ? false : !!mine.is_admin; state.claimsReady = true;
+      state.claims = c; state.isCaptain = state.isSuper || (!vt && !!mine.is_admin); /* super admin heeft in elk team captain-rechten */ state.claimsReady = true;
       var q = [run(sb.from('matches').select('*').eq('team_id', tid)), run(sb.from('players').select('*').eq('team_id', tid)), run(sb.from('answers').select('*').eq('team_id', tid))];
       if (state.isCaptain) q.push(run(sb.from('team_codes').select('*').eq('team_id', tid)));
       return Promise.all(q).then(function (x) {
@@ -1594,7 +1594,12 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   document.addEventListener('submit', function (ev) {
     if (ev.target.id !== 'teamform') return;
     ev.preventDefault();
-    run(sb.rpc('update_team_settings', { p_name: $('tname').value, p_min: parseInt($('tmin').value, 10) }))
+    var min = parseInt($('tmin').value, 10);
+    /* super admin die een ander team bekijkt: instellingen van dat team aanpassen, niet van het eigen team */
+    var q = state.viewTeam && state.isSuper && state.team
+      ? sb.rpc('set_team', { p_team: state.team.id, p_name: $('tname').value, p_hue: null, p_min: min, p_active: null })
+      : sb.rpc('update_team_settings', { p_name: $('tname').value, p_min: min });
+    run(q)
       .then(function () { toast('Team bijgewerkt.'); return loadAll(); }).catch(rpcFail);
   });
   $('newcode').addEventListener('click', function () {
