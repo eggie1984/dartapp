@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Wie gooit er mee?</title>
+<!doctype html><html lang="nl"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Wie gooit er mee?</title>
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#15493A"><meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0B4545"><link rel="icon" type="image/png" href="icon-192.png"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Wie gooit er mee?">
 </head><body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -743,7 +743,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
       h = '<section class="who"><h2>Wie ben jij?</h2><p>Kies je naam. Daarna kan alleen jij jouw antwoorden aanpassen.</p><div class="chips">' +
         PLAYERS.map(function (p) {
           var taken = !!claimUid(p.id);
-          return '<button class="chip" data-act="claim" data-pid="' + p.id + '" data-fk="who:' + p.id + '"' + (taken ? ' disabled' : '') + '>' + esc(p.short) + (taken ? '<small>gekozen</small>' : '') + '</button>';
+          return '<button class="chip" data-act="claim" data-pid="' + esc(p.id) + '" data-fk="who:' + esc(p.id) + '"' + (taken ? ' disabled' : '') + '>' + esc(p.short) + (taken ? '<small>gekozen</small>' : '') + '</button>';
         }).join('') + '</div></section>';
     } else {
       h = '<div class="whoami"><span>Je vult in als <strong>' + esc(player(me).short) + '</strong>' + (state.isCaptain ? ' (captain)' : '') + '</span>' +
@@ -785,8 +785,8 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
 
   function optButtons(mid, pid, cur, mini, disabled) {
     return ORDER.map(function (s) {
-      return '<button class="opt ' + s + (mini ? ' mini' : '') + '" data-act="status" data-mid="' + mid + '" data-pid="' + pid + '" data-s="' + s +
-        '" data-fk="' + mid + ':' + pid + ':' + s + '" aria-pressed="' + (cur === s) + '"' + (disabled ? ' disabled' : '') + '>' +
+      return '<button class="opt ' + s + (mini ? ' mini' : '') + '" data-act="status" data-mid="' + esc(mid) + '" data-pid="' + esc(pid) + '" data-s="' + s +
+        '" data-fk="' + esc(mid + ':' + pid + ':' + s) + '" aria-pressed="' + (cur === s) + '"' + (disabled ? ' disabled' : '') + '>' +
         (mini ? '' : ICON[s]) + '<span>' + LABEL[s] + '</span></button>';
     }).join('');
   }
@@ -821,13 +821,13 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     if (me && !isPast) {
       h += '<div class="mine"><span class="lab">Jouw antwoord</span><div class="seg">' + optButtons(m.id, me, statusOf(m.id, me), false, dis) + '</div></div>';
     }
-    h += '<button class="more" data-act="toggle" data-mid="' + m.id + '" data-fk="t:' + m.id + '" aria-expanded="' + !!open + '"><span>' + info + '</span><span class="chev"></span></button>';
+    h += '<button class="more" data-act="toggle" data-mid="' + esc(m.id) + '" data-fk="t:' + esc(m.id) + '" aria-expanded="' + !!open + '"><span>' + info + '</span><span class="chev"></span></button>';
     if (open) {
       var p = locParts(m);
       h += '<div class="detail"><ul class="roster">';
       PLAYERS.forEach(function (pl) {
         var s = statusOf(m.id, pl.id);
-        h += '<li><div class="rrow"><span class="pname">' + esc(pl.name) + (pl.role ? '<span class="badge">' + pl.role + '</span>' : '') +
+        h += '<li><div class="rrow"><span class="pname">' + esc(pl.name) + (pl.role ? '<span class="badge">' + esc(pl.role) + '</span>' : '') +
           (pl.id === me ? '<small>(jij)</small>' : '') + '</span><span class="pill ' + s + '">' + LABEL[s] + '</span></div>';
         if (state.proxy && state.isCaptain && !isPast) h += '<div class="seg">' + optButtons(m.id, pl.id, s, true, dis) + '</div>';
         h += '</li>';
@@ -836,7 +836,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
       if (p.length > 1) h += '<p class="addr">' + esc(p.slice(1).join(', ')) + '</p>';
       h += '<div class="acts">';
       if (p.length) h += '<a href="' + (m.home === false ? navUrl(m) : 'https://www.google.com/maps/search/?api=1&amp;query=' + encodeURIComponent(m.loc)) + '" target="_blank" rel="noopener">' + (m.home === false ? 'Navigeer naar de wedstrijd' : 'Route openen') + '</a>';
-      if (state.isCaptain && !isPast) h += '<button class="linkbtn" data-act="proxy" data-fk="proxy:' + m.id + '" aria-pressed="' + state.proxy + '">' + (state.proxy ? 'Klaar met invullen voor anderen' : 'Invullen voor iemand anders') + '</button>';
+      if (state.isCaptain && !isPast) h += '<button class="linkbtn" data-act="proxy" data-fk="proxy:' + esc(m.id) + '" aria-pressed="' + state.proxy + '">' + (state.proxy ? 'Klaar met invullen voor anderen' : 'Invullen voor iemand anders') + '</button>';
       h += '</div></div>';
     }
     return h + '</article>';
@@ -882,7 +882,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
       var u = claimUid(p.id);
       if (!u) return '';
       var isAdm = !!(state.claims[u] && state.claims[u].a), me = u === state.uid;
-      return '<li><div class="lrow"><span class="lname">' + esc(p.name) + (p.role ? '<span class="badge">' + p.role + '</span>' : '') +
+      return '<li><div class="lrow"><span class="lname">' + esc(p.name) + (p.role ? '<span class="badge">' + esc(p.role) + '</span>' : '') +
         (isAdm ? '<span class="badge">Beheerder</span>' : '') + '</span><span class="lact">' +
         (me ? '<span class="note">Jij</span>' :
           '<button class="linkbtn' + (isAdm ? ' danger' : '') + '" data-act="setadmin" data-uid="' + esc(u) + '" data-v="' + (isAdm ? '0' : '1') + '" data-fk="ad:' + esc(p.id) + '">' +
@@ -891,14 +891,15 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     $('claimlist').innerHTML = PLAYERS.map(function (p) {
       var u = claimUid(p.id);
       var ask = state.confirmDel === p.id;
-      return '<li><div class="lrow"><span class="lname">' + esc(p.name) + (p.role ? '<span class="badge">' + p.role + '</span>' : '') +
+      var pid = esc(p.id);
+      return '<li><div class="lrow"><span class="lname">' + esc(p.name) + (p.role ? '<span class="badge">' + esc(p.role) + '</span>' : '') +
         '<span class="sdot' + (u ? ' ok' : '') + '" role="img" aria-label="' + (u ? 'naam gekozen' : 'nog niet gekozen') + '"></span></span><span class="lact"><span class="slot">' +
-        (u ? '<button class="linkbtn" data-act="unclaim" data-uid="' + esc(u) + '" data-fk="uc:' + p.id + '">Maak los</button>' : '') + '</span><span>' +
-        (ask ? '' : '<button class="linkbtn danger" data-act="del-ask" data-pid="' + p.id + '" data-fk="da:' + p.id + '">Verwijder</button>') +
+        (u ? '<button class="linkbtn" data-act="unclaim" data-uid="' + esc(u) + '" data-fk="uc:' + pid + '">Maak los</button>' : '') + '</span><span>' +
+        (ask ? '' : '<button class="linkbtn danger" data-act="del-ask" data-pid="' + pid + '" data-fk="da:' + pid + '">Verwijder</button>') +
         '</span></div>' +
         (ask ? '<div class="confirm"><span>' + esc(p.short) + ' en alle antwoorden van die speler verwijderen?</span>' +
-          '<button class="btn small danger" data-act="del-yes" data-pid="' + p.id + '" data-fk="dy:' + p.id + '">Ja, verwijder</button>' +
-          '<button class="linkbtn" data-act="del-cancel" data-fk="dc:' + p.id + '">Annuleer</button></div>' : '') + '</li>';
+          '<button class="btn small danger" data-act="del-yes" data-pid="' + pid + '" data-fk="dy:' + pid + '">Ja, verwijder</button>' +
+          '<button class="linkbtn" data-act="del-cancel" data-fk="dc:' + pid + '">Annuleer</button></div>' : '') + '</li>';
     }).join('');
   }
 
@@ -1159,9 +1160,11 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     render();
   }
   function resetSeason() {
+    if (!state.team || !state.isCaptain || state.viewTeam) return;
+    var tid = state.team.id;
     state.seasonAsk = false; state.expanded = {}; resetMatchForm();
-    run(sb.from('answers').delete().neq('match_id', ''))
-      .then(function () { return run(sb.from('matches').delete().neq('id', '')); })
+    run(sb.from('answers').delete().eq('team_id', tid))
+      .then(function () { return run(sb.from('matches').delete().eq('team_id', tid)); })
       .then(function () { toast('Seizoen gewist. Importeer nu de nieuwe speelkalender.'); return loadAll(); }).catch(writeFail);
     render();
   }
@@ -1369,7 +1372,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
       if (curS === s) { if (s === 'yes') return; s = 'yes'; }
       writeAnswer(m2, p2, s);
     } else if (act === 'push') { enablePush();
-    } else if (act === 'logout') { sb.auth.signOut();
+    } else if (act === 'logout') { logout();
     } else if (act === 'signup') { auth(true);
     } else if (act === 'msgto') { toggleMsgTo(t.getAttribute('data-pid'));
     } else if (act === 'testpush') {
@@ -1561,17 +1564,17 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     $('teamlist').innerHTML = (state.teams || []).map(function (t) {
       return '<li class="teamitem' + (t.active ? '' : ' off') + '"><div class="th"><span class="huedot" style="width:18px;height:18px;background:' + hueColor(t.hue) + '"></span><strong class="tn">' + esc(t.name) + '</strong><span class="note">' + t.members + ' leden' + (t.active ? '' : ' · uit') + (t.share === false ? ' · niet gedeeld' : '') + '</span></div>' +
         '<div class="tcodes">Teamcode: <b>' + esc(t.join_code || '') + '</b>' + (t.captain_code ? '<br>Code voor beheerder: <b>' + esc(t.captain_code) + '</b>' : '<br>Beheerder is aangesloten') + '</div>' +
-        '<div class="tacts"><button class="linkbtn" data-act="t-view" data-tid="' + t.id + '">Bekijk team</button>' +
-        '<button class="linkbtn" data-act="req-open" data-tid="' + t.id + '" data-tname="' + esc(t.name) + '">Stuur de captain een bericht</button>' +
-        '<button class="linkbtn" data-act="t-rename" data-tid="' + t.id + '">Naam wijzigen</button>' +
-        '<button class="linkbtn" data-act="t-qr" data-tid="' + t.id + '">QR beheerder</button>' +
-        '<label class="linkbtn filebtn">Wedstrijden inladen<input type="file" accept=".ics,text/calendar" data-ics="' + t.id + '" hidden></label>' +
-        '<button class="linkbtn" data-act="t-addmatch" data-tid="' + t.id + '">Wedstrijd toevoegen</button>' +
-        '<button class="linkbtn" data-act="t-join" data-tid="' + t.id + '">Nieuwe teamcode</button>' +
-        '<button class="linkbtn" data-act="t-cap" data-tid="' + t.id + '">Nieuwe beheerderscode</button>' +
-        '<button class="linkbtn" data-act="t-active" data-tid="' + t.id + '" data-v="' + (t.active ? '0' : '1') + '">' + (t.active ? 'Zet uit' : 'Zet aan') + '</button>' +
-        '<button class="linkbtn danger" data-act="t-del" data-tid="' + t.id + '">Verwijder</button></div>' +
-        '<div class="qrpanel" id="qr-' + t.id + '" hidden></div></li>';
+        '<div class="tacts"><button class="linkbtn" data-act="t-view" data-tid="' + esc(t.id) + '">Bekijk team</button>' +
+        '<button class="linkbtn" data-act="req-open" data-tid="' + esc(t.id) + '" data-tname="' + esc(t.name) + '">Stuur de captain een bericht</button>' +
+        '<button class="linkbtn" data-act="t-rename" data-tid="' + esc(t.id) + '">Naam wijzigen</button>' +
+        '<button class="linkbtn" data-act="t-qr" data-tid="' + esc(t.id) + '">QR beheerder</button>' +
+        '<label class="linkbtn filebtn">Wedstrijden inladen<input type="file" accept=".ics,text/calendar" data-ics="' + esc(t.id) + '" hidden></label>' +
+        '<button class="linkbtn" data-act="t-addmatch" data-tid="' + esc(t.id) + '">Wedstrijd toevoegen</button>' +
+        '<button class="linkbtn" data-act="t-join" data-tid="' + esc(t.id) + '">Nieuwe teamcode</button>' +
+        '<button class="linkbtn" data-act="t-cap" data-tid="' + esc(t.id) + '">Nieuwe beheerderscode</button>' +
+        '<button class="linkbtn" data-act="t-active" data-tid="' + esc(t.id) + '" data-v="' + (t.active ? '0' : '1') + '">' + (t.active ? 'Zet uit' : 'Zet aan') + '</button>' +
+        '<button class="linkbtn danger" data-act="t-del" data-tid="' + esc(t.id) + '">Verwijder</button></div>' +
+        '<div class="qrpanel" id="qr-' + esc(t.id) + '" hidden></div></li>';
     }).join('') || '<li><span class="note">Nog geen teams.</span></li>';
   }
   function toggleTeamQr(id) {
@@ -1685,17 +1688,37 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); })
       .then(function (sub) { state.push = !!sub; render(); }).catch(function () {});
   }
+  function savePushSub(sub) {
+    var j = sub.toJSON();
+    return run(sb.from('push_subscriptions').upsert({ endpoint: j.endpoint, user_id: state.uid, p256dh: j.keys.p256dh, auth: j.keys.auth }, { onConflict: 'endpoint' }));
+  }
   function enablePush() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) { toast('Meldingen werken hier niet. Op iPhone: zet de app eerst op je beginscherm en open hem daarvandaan.'); return; }
     Notification.requestPermission().then(function (perm) {
       if (perm !== 'granted') { toast('Meldingen zijn niet toegestaan. Zet ze aan in de instellingen van je telefoon of browser.'); return; }
       return navigator.serviceWorker.ready.then(function (reg) {
-        return reg.pushManager.getSubscription().then(function (s) { return s || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64(CFG.VAPID_PUBLIC_KEY) }); });
-      }).then(function (sub) {
-        var j = sub.toJSON();
-        return run(sb.from('push_subscriptions').upsert({ endpoint: j.endpoint, user_id: state.uid, p256dh: j.keys.p256dh, auth: j.keys.auth }, { onConflict: 'endpoint' }));
+        function fresh() { return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64(CFG.VAPID_PUBLIC_KEY) }); }
+        return reg.pushManager.getSubscription().then(function (s) { return s || fresh(); }).then(function (sub) {
+          /* Hoort dit toestel nog bij een ander account (iemand anders was hier ingelogd)? Dan opnieuw aanmelden met een nieuw adres. */
+          return savePushSub(sub).catch(function () {
+            return sub.unsubscribe().then(fresh).then(savePushSub);
+          });
+        });
       }).then(function () { state.push = true; toast('Meldingen staan aan.'); render(); });
     }).catch(function () { toast('Meldingen aanzetten is niet gelukt.'); });
+  }
+  /* Bij uitloggen dit toestel afmelden, zodat de volgende gebruiker geen meldingen van jouw account krijgt. */
+  function logout() {
+    if (!sb) return;
+    var done = false;
+    function out() { if (done) return; done = true; state.push = false; sb.auth.signOut(); }
+    setTimeout(out, 4000); /* nooit blijven hangen */
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) { out(); return; }
+    navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
+      if (!sub) return;
+      return Promise.resolve(sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint)).catch(function () {})
+        .then(function () { return sub.unsubscribe(); });
+    }).catch(function () {}).then(out);
   }
 
   var CFG = window.APP_CONFIG || {};
@@ -2936,7 +2959,7 @@ return R("index");})();
     teamName = team.name;
     var link = url + '?team=' + codes.join_code;
     try { $('qrbox').innerHTML = qrSvg(link); } catch (e) { $('qrbox').textContent = link; }
-    $('inviteurl').innerHTML = 'Teamcode: <strong>' + codes.join_code + '</strong>';
+    $('inviteurl').innerHTML = 'Teamcode: <strong>' + String(codes.join_code).replace(/[^A-Z0-9]/gi, '') + '</strong>';
     msg = "Hoi! Je bent uitgenodigd voor de dartapp van " + team.name + ". Daar geef je door of je erbij bent.\n\n" +
       "1. Open deze link:\n" + link + "\n\n" +
       "2. Installeer de app op je telefoon:\n" +

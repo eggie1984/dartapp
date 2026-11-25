@@ -642,11 +642,16 @@ details[open] .chev { transform: rotate(90deg); }
         }
         return Notification.requestPermission().then(function (perm) {
           if (perm !== 'granted') { toast('Meldingen zijn niet toegestaan. Zet ze aan in de instellingen van je telefoon of browser.'); return; }
-          return (sub ? Promise.resolve(sub) : reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64(CFG.VAPID_PUBLIC_KEY) })).then(function (s) {
+          function fresh() { return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64(CFG.VAPID_PUBLIC_KEY) }); }
+          function save(s) {
             var j = s.toJSON();
             return sb.from('push_subscriptions').upsert({ endpoint: j.endpoint, user_id: S.uid, p256dh: j.keys.p256dh, auth: j.keys.auth }, { onConflict: 'endpoint' })
-              .then(function (r) { if (r.error) throw r.error; S.push = true; render(); });
-          });
+              .then(function (r) { if (r.error) throw r.error; });
+          }
+          return (sub ? Promise.resolve(sub) : fresh()).then(function (s) {
+            /* hoort dit toestel nog bij een ander account? dan opnieuw aanmelden met een nieuw adres */
+            return save(s).catch(function () { return s.unsubscribe().then(fresh).then(save); });
+          }).then(function () { S.push = true; render(); });
         });
       });
     }).catch(function () { toast('Meldingen aan- of uitzetten is niet gelukt.'); });
@@ -660,12 +665,24 @@ details[open] .chev { transform: rotate(90deg); }
     var b = $('testalert'); b.disabled = true;
     sb.functions.invoke('venue-alert', { body: { test: true, all: all } }).then(function (r) {
       b.disabled = false;
-      if (r.error) toast('Testmelding mislukt.');
-      else if (r.data && r.data.sent === 0) toast('Er is geen toestel van jou aangemeld voor meldingen. Zet eerst "Meldingen aanzetten" aan.');
+      if (r.error || !r.data) toast('Testmelding mislukt.');
+      else if (r.data.sent === 0) toast('Er is geen toestel van jou aangemeld voor meldingen. Zet eerst "Meldingen aanzetten" aan.');
       else toast(all ? 'Testmelding verstuurd naar ' + r.data.sent + ' toestel(len), kastelein(s) inbegrepen.' : 'Testmelding verstuurd.');
     }, function () { b.disabled = false; toast('Testmelding mislukt.'); });
   });
-  $('logout').addEventListener('click', function () { if (sb) sb.auth.signOut(); });
+  /* bij uitloggen dit toestel afmelden, zodat de volgende gebruiker geen meldingen van dit account krijgt */
+  $('logout').addEventListener('click', function () {
+    if (!sb) return;
+    var done = false;
+    function out() { if (done) return; done = true; S.push = false; sb.auth.signOut(); }
+    setTimeout(out, 4000);
+    if (!pushOK()) { out(); return; }
+    navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
+      if (!sub) return;
+      return Promise.resolve(sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint)).catch(function () {})
+        .then(function () { return sub.unsubscribe(); });
+    }).catch(function () {}).then(out);
+  });
   render();
   if (!CFG.SUPABASE_URL || /JOUW/.test(CFG.SUPABASE_URL)) return;
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(function () {});
