@@ -1749,7 +1749,11 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   }
   function savePushSub(sub) {
     var j = sub.toJSON();
-    return run(sb.from('push_subscriptions').upsert({ endpoint: j.endpoint, user_id: state.uid, p256dh: j.keys.p256dh, auth: j.keys.auth }, { onConflict: 'endpoint' }));
+    return run(sb.from('push_subscriptions').upsert({ endpoint: j.endpoint, user_id: state.uid, p256dh: j.keys.p256dh, auth: j.keys.auth }, { onConflict: 'endpoint' }))
+      .then(function () {
+        /* herinnering van vandaag die dit toestel nog niet had? die alsnog sturen (op de achtergrond) */
+        callFn('send-catchup', { endpoint: j.endpoint }).catch(function () {});
+      });
   }
   function enablePush(silent) {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) { if (!silent) toast('Meldingen werken hier niet. Op iPhone: zet de app eerst op je beginscherm en open hem daarvandaan.'); return; }

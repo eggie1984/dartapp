@@ -3,7 +3,7 @@
 // NIEUWE VERSIE UITBRENGEN: verhoog VERSIE hieronder én "versie" in versie.json.
 // Iedereen blijft op de oude versie tot hij zelf op "Bijwerken" tikt.
 // Kiest iemand "Later", dan komt de vraag terug bij de volgende keer openen.
-const VERSIE = "1.6";
+const VERSIE = "1.7";
 const PREFIX = "dart-";
 const CACHE = PREFIX + VERSIE;
 const META = PREFIX + "meta";
