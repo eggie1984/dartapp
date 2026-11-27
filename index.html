@@ -308,7 +308,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
 .thread { margin-top: 10px; border-left: 3px solid var(--line); padding-left: 10px; display: flex; flex-direction: column; gap: 10px; }
 .rep { font-size: 14px; }
 .rep .rhead { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
-.rep.mine strong { color: var(--accent); }
+.rep.rep-me strong { color: var(--accent); }
 .rep.new { border-left: 3px solid #E5372B; margin-left: -13px; padding-left: 10px; }
 .rep .linkbtn, .msg .macts .linkbtn { min-height: 36px; padding: 4px 0; }
 /* uitslagen */
@@ -348,9 +348,9 @@ dialog.respage::backdrop { background: var(--bg); }
 .oppcard { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px 6px; margin-bottom: 12px; }
 .oppcard h3 { margin: 0 0 4px; font: 700 24px/1.1 var(--font-display); color: var(--ink); }
 .rr-next { display: inline-block; font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 2px; }
-.rrow { display: grid; grid-template-columns: 58px 1fr auto; gap: 4px 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
-.oppcard h3 + .rrow { border-top: 0; }
-.rrow .rr-tag { justify-self: start; }
+.urow { display: grid; grid-template-columns: 58px 1fr auto; gap: 4px 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.oppcard h3 + .urow { border-top: 0; }
+.urow .rr-tag { justify-self: start; }
 .rr-mid { display: flex; flex-direction: column; min-width: 0; font-size: 14px; color: var(--ink-2); }
 .rr-mid strong { color: var(--ink); font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rr-res { display: flex; align-items: center; gap: 10px; }
@@ -379,6 +379,9 @@ dialog.respage::backdrop { background: var(--bg); }
 .rr-none { margin: 0; color: var(--ink-2); font-size: 14px; }
 .resin input::-webkit-outer-spin-button, .resin input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .resin input { -moz-appearance: textfield; appearance: textfield; }
+.resopen { width: 100%; min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 12px; font: inherit; font-weight: 600; color: var(--ink); text-align: left; cursor: pointer; }
+.resopen .rcount { color: var(--ink-2); font-weight: 500; font-size: 14px; }
+.resopen .rcount::after { content: " ›"; font-size: 18px; }
 .noteam #resbtn { display: none; }
 </style>
 
@@ -453,6 +456,8 @@ dialog.respage::backdrop { background: var(--bg); }
   <div id="who"></div>
   <div id="summary"></div>
   <div id="list" class="group"></div>
+
+  <button type="button" class="panel resopen" id="resbtn2" data-act="res-open" hidden><span>Uitslagen</span><span class="rcount" id="rescount"></span></button>
 
   <details class="panel" id="pastbox" hidden>
     <summary id="pastsum">Gespeeld</summary>
@@ -1126,7 +1131,7 @@ dialog.respage::backdrop { background: var(--bg); }
         var mine = r.user_id === state.uid;
         var who = mine ? 'Jij' : (r.from_name || 'Speler');
         if (r.to_user) who += r.to_user === state.uid ? ' aan jou' : ' aan ' + nameOfUser(r.to_user);
-        return '<div class="rep' + (mine ? ' mine' : '') + (state.fresh['a:' + r.id] ? ' new' : '') + '"><div class="rhead"><strong>' + esc(who) + '</strong><small>' +
+        return '<div class="rep' + (mine ? ' rep-me' : '') + (state.fresh['a:' + r.id] ? ' new' : '') + '"><div class="rhead"><strong>' + esc(who) + '</strong><small>' +
           esc(matchWhen(r.created_at)) + '</small></div><p>' + esc(r.body) + '</p>' +
           (cap && !mine && !r.to_user ? '<button type="button" class="linkbtn" data-act="rep-open" data-mid="' + esc(m.id) + '" data-to="' + esc(r.user_id) +
             '" data-name="' + esc(r.from_name || '') + '">Reageer naar ' + esc(r.from_name || 'speler') + '</button>' : '') + '</div>';
@@ -1226,7 +1231,7 @@ dialog.respage::backdrop { background: var(--bg); }
     if (hasResult(m)) right = '<span class="rr-res"><b class="rr-n">' + scoreTxt(m) + '</b><b class="rbadge ' + resultKind(m) + '" title="' + RESLAB[resultKind(m)] + '">' + RESLET[resultKind(m)] + '</b></span>';
     else if (!begun(m)) right = '<span class="rr-open">Nog te spelen</span>';
     else right = '<span class="rr-open">Geen uitslag</span>';
-    var h = '<div class="rrow' + (hasResult(m) ? ' ' + resultKind(m) : '') + '">' + tag +
+    var h = '<div class="urow' + (hasResult(m) ? ' ' + resultKind(m) : '') + '">' + tag +
       '<div class="rr-mid">' + (withOpp ? '<strong>' + esc(m.opp) + '</strong>' : '') + '<span>' + esc(resDate(m.start)) + '</span></div>' + right;
     if (state.resEdit === 'd:' + m.id) h += '<div class="rr-edit">' + resForm(m, 'd') + '</div>';
     else if (canResult() && begun(m)) h += '<div class="rr-edit">' + editBtn(m, 'd', hasResult(m) ? 'Wijzigen' : 'Uitslag invullen') + '</div>';
@@ -1236,6 +1241,10 @@ dialog.respage::backdrop { background: var(--bg); }
     var all = state.matches.filter(function (m) { return oppKnown(m.opp); }).sort(byStart);
     var on = !!state.uid && state.dbState === 'ok' && all.length > 0;
     $('resbtn').hidden = !on;
+    $('resbtn2').hidden = !on;
+    var dn = all.filter(hasResult), cw = 0, cg = 0, cl = 0;
+    dn.forEach(function (m) { var k = resultKind(m); if (k === 'win') cw++; else if (k === 'loss') cl++; else cg++; });
+    $('rescount').textContent = dn.length ? cw + 'W · ' + cg + 'G · ' + cl + 'V' : (canResult() ? 'Invullen' : '');
     var d = $('resdlg');
     if (!d.open) return;
     var done = all.filter(hasResult), w = 0, g = 0, l = 0, f = 0, a = 0;
