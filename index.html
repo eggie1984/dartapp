@@ -1512,11 +1512,15 @@ dialog.respage::backdrop { background: var(--bg); }
     var before = null; state.matches.forEach(function (x) { if (x.id === rec.id) before = x; });
     var nowKnown = oppKnown(rec.opp) && !(before && oppKnown(before.opp)); /* tegenstander net bekend geworden */
     var notify = $('mnotify').checked || nowKnown;
+    /* andere dag? dan zet de database iedereen weer op Kan (zie 11-verzetten-iedereen-op-kan.sql) */
+    var dayOf = function (x) { return new Date(x).toLocaleDateString('nl-NL', { timeZone: TZ }); };
+    var moved = !!(before && before.start && dayOf(before.start) !== dayOf(rec.start));
     run(sb.from('matches').upsert(rec)).then(function () {
-      toast(isNew ? 'Wedstrijd toegevoegd.' : 'Wijziging opgeslagen.');
+      toast(isNew ? 'Wedstrijd toegevoegd.' : moved ? 'Wedstrijd verzet. Iedereen staat weer op Kan.' : 'Wijziging opgeslagen.');
       resetMatchForm(); $('mnotify').checked = true;
       if (notify) {
         var body = matchWhen(rec.start) + (rec.opp ? ' tegen ' + rec.opp : '') + (rec.home === true ? ' (thuis)' : rec.home === false ? ' (uit)' : '');
+        if (moved) body += '. Iedereen staat weer op Kan: geef het door als je niet kunt.';
         return sendMessage(nowKnown ? 'Wedstrijd bekend' : isNew ? 'Nieuwe wedstrijd' : 'Wedstrijd gewijzigd', body).catch(function () { toast('Opgeslagen, maar de melding is niet verstuurd.'); });
       }
     }).then(loadAll).catch(writeFail);
@@ -1810,7 +1814,7 @@ dialog.respage::backdrop { background: var(--bg); }
       var list = parseICS(txt);
       if (!list.length) { out.textContent = 'In dit bestand staan geen wedstrijden.'; state.pending = null; return; }
       state.pending = list;
-      out.innerHTML = '<p><strong>' + list.length + ' wedstrijden gevonden.</strong></p><p class="note">Wedstrijden die niet veranderd zijn blijven zoals ze zijn, met hun antwoorden. Is de datum of tijd gewijzigd, dan wordt die aangepast. Nieuwe wedstrijden worden toegevoegd en wedstrijden die al geweest zijn worden verwijderd.</p>' +
+      out.innerHTML = '<p><strong>' + list.length + ' wedstrijden gevonden.</strong></p><p class="note">Wedstrijden die niet veranderd zijn blijven zoals ze zijn, met hun antwoorden. Is de datum of tijd gewijzigd, dan wordt die aangepast. Nieuwe wedstrijden worden toegevoegd. Gespeelde wedstrijden blijven staan, met hun uitslag.</p>' +
         (db ? '<button class="btn" data-act="import-save">Opslaan voor het team</button>' : '<p>Opslaan kan alleen in de gedeelde versie van deze pagina.</p>');
     }).catch(function () { out.textContent = 'Het bestand kon niet worden gelezen.'; });
   });
@@ -2006,7 +2010,6 @@ dialog.respage::backdrop { background: var(--bg); }
   }
   function syncText(r) {
     var t = r.new + ' nieuw, ' + r.updated + ' gewijzigd, ' + r.unchanged + ' ongewijzigd';
-    if (r.past_removed) t += ', ' + r.past_removed + ' verwijderd omdat ze geweest zijn';
     if (r.not_in_file) t += '. ' + r.not_in_file + ' komende wedstrijd(en) staan niet in het bestand en zijn blijven staan';
     return t + '.';
   }
@@ -2018,7 +2021,7 @@ dialog.respage::backdrop { background: var(--bg); }
       if (!list.length) { toast('Geen wedstrijden gevonden in dit bestand.'); return; }
       var known = list.filter(function (m) { return m.home !== null; }).length;
       var msg = list.length + ' wedstrijden gevonden voor ' + tm.name + (known === 0 ? '. Let op: de teamnaam komt niet in het bestand voor, dus thuis/uit is onbekend' : '') + '.\n\n' +
-        'Wedstrijden die niet veranderd zijn blijven zoals ze zijn (met hun antwoorden). Is de datum of tijd gewijzigd, dan wordt die aangepast. Nieuwe wedstrijden worden toegevoegd en wedstrijden die al geweest zijn worden verwijderd. Doorgaan?';
+        'Wedstrijden die niet veranderd zijn blijven zoals ze zijn (met hun antwoorden). Is de datum of tijd gewijzigd, dan wordt die aangepast. Nieuwe wedstrijden worden toegevoegd. Gespeelde wedstrijden blijven staan, met hun uitslag. Doorgaan?';
       if (!window.confirm(msg)) return;
       run(sb.rpc('sync_matches', { p_team: tm.id, p_matches: list.map(function (m) { return { uid: m.uid, start: m.start, opp: m.opp, home: m.home, loc: m.loc }; }) }))
         .then(function (r) { toast(tm.name + ': ' + syncText(r.data || {})); loadTeams(); }).catch(rpcFail);
