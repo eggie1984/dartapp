@@ -312,9 +312,6 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
 .rep.new { border-left: 3px solid #E5372B; margin-left: -13px; padding-left: 10px; }
 .rep .linkbtn, .msg .macts .linkbtn { min-height: 36px; padding: 4px 0; }
 /* uitslagen */
-.resopen { width: 100%; min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 12px; font: inherit; font-weight: 600; color: var(--ink); text-align: left; cursor: pointer; }
-.resopen .rcount { color: var(--ink-2); font-weight: 500; font-size: 14px; }
-.resopen .rcount::after { content: " ›"; font-size: 18px; }
 .resbox { display: flex; flex-direction: column; gap: 6px; }
 .result { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; border-radius: 10px; background: var(--surface-2); }
 .result .rs-lab { font: 700 15px/1 var(--font-display); letter-spacing: .08em; text-transform: uppercase; padding: 6px 9px 5px; border-radius: 7px; color: var(--on-status); background: var(--ink-2); }
@@ -329,7 +326,46 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
 .resin label span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .resin input { font: 700 24px/1 var(--font-display); min-height: 50px; text-align: center; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; box-sizing: border-box; }
 .resin b { padding-bottom: 13px; font-size: 20px; color: var(--ink); }
-.ressum { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 18px 4px; }
+/* uitslagenpagina (schermvullend, zoals Thuiswedstrijden) */
+.top .in { flex-wrap: wrap; }
+.top .in > div:not(.hacts) { min-width: 0; flex: 1 1 0; }
+.hacts { order: 3; flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 8px; padding-left: 68px; }
+.hacts .switchlink { margin-left: 0; }
+.hacts:not(:has(> :not([hidden]))) { display: none; }
+button.switchlink { background: transparent; cursor: pointer; min-height: 38px; }
+dialog.respage { position: fixed; inset: 0; width: 100%; max-width: none; height: 100%; max-height: none; margin: 0; padding: 0; border: 0; background: var(--bg); color: var(--ink); }
+dialog.respage[open] { display: flex; flex-direction: column; }
+dialog.respage::backdrop { background: var(--bg); }
+.rp-head { background: var(--brand); color: var(--brand-ink); padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 14px; flex: none; }
+.rp-in { max-width: 720px; margin: 0 auto; }
+.rp-back { appearance: none; background: transparent; border: 1px solid rgba(255,255,255,.4); color: inherit; border-radius: 999px; padding: 8px 14px; font: 600 14px var(--font-body); min-height: 40px; cursor: pointer; }
+.rp-head h2 { margin: 12px 0 0; font: 700 32px/1 var(--font-display); letter-spacing: .01em; }
+.rp-sub { margin: 4px 0 0; font-size: 13px; opacity: .8; }
+.rp-tabs { display: flex; gap: 6px; margin-top: 12px; }
+.rp-tabs button { flex: 1; appearance: none; border: 1px solid rgba(255,255,255,.4); background: transparent; color: inherit; border-radius: 10px; min-height: 44px; font: 600 15px var(--font-body); cursor: pointer; }
+.rp-tabs button[aria-pressed="true"] { background: var(--brand-ink); color: var(--brand); border-color: var(--brand-ink); }
+.rp-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 14px 16px calc(28px + env(safe-area-inset-bottom, 0px)); }
+.oppcard { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px 6px; margin-bottom: 12px; }
+.oppcard h3 { margin: 0 0 4px; font: 700 24px/1.1 var(--font-display); color: var(--ink); }
+.rr-next { display: inline-block; font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 2px; }
+.rrow { display: grid; grid-template-columns: 58px 1fr auto; gap: 4px 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.oppcard h3 + .rrow { border-top: 0; }
+.rrow .rr-tag { justify-self: start; }
+.rr-mid { display: flex; flex-direction: column; min-width: 0; font-size: 14px; color: var(--ink-2); }
+.rr-mid strong { color: var(--ink); font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rr-res { display: flex; align-items: center; gap: 10px; }
+.rr-n { font: 700 28px/1 var(--font-display); color: var(--ink); white-space: nowrap; }
+.rr-open { font-size: 14px; color: var(--ink-2); }
+.rr-edit { grid-column: 1 / -1; }
+.rr-edit .linkbtn { min-height: 34px; padding: 2px 0; font-size: 14px; }
+.rbadge { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; font: 700 17px/1 var(--font-display); color: var(--on-status); background: var(--ink-2); flex: none; }
+.rbadge.win { background: var(--yes); }
+.rbadge.loss { background: var(--no); }
+.prevres { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 8px 0 0; padding: 8px 12px; border-radius: 10px; background: var(--surface-2); font-size: 14px; color: var(--ink-2); }
+.prevres .pr-r { display: flex; align-items: center; gap: 8px; }
+.prevres .pr-n { font: 700 22px/1 var(--font-display); color: var(--ink); white-space: nowrap; }
+.prevres .rbadge { width: 26px; height: 26px; font-size: 15px; }
+.ressum { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 0 12px; }
 .ressum:empty { display: none; }
 .ressum span { padding: 6px 10px; border-radius: 8px; background: var(--surface-2); font-size: 14px; color: var(--ink); }
 .ressum .rw b { color: var(--yes); }
@@ -352,7 +388,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     <h1 id="teamname">Wie gooit er mee?</h1>
     <p class="sub" id="season">Wie gooit er mee? Seizoen 2026-2027</p>
   </div>
-  <a class="switchlink" id="switchapp" href="kroeg.html" hidden>Thuiswedstrijden</a>
+  <div class="hacts"><a class="switchlink" id="switchapp" href="kroeg.html" hidden>Thuiswedstrijden</a><button type="button" class="switchlink" id="resbtn" data-act="res-open" hidden>Uitslagen</button></div>
   <button type="button" class="bell" id="bell" hidden aria-label="Berichten"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><span class="badge" id="bellbadge" hidden></span></button>
 </div></div>
 <dialog class="inbox" id="inbox" aria-labelledby="inboxtitle">
@@ -393,10 +429,17 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     <div class="acts"><button class="btn" type="submit" id="repsend">Versturen</button></div>
   </form>
 </dialog>
-<dialog class="inbox" id="resdlg" aria-labelledby="restitle">
-  <div class="inbox-head"><h2 id="restitle">Uitslagen</h2><button type="button" class="linkbtn" id="resclose">Sluiten</button></div>
-  <div class="ressum" id="ressum"></div>
-  <ul class="reslist" id="reslist"></ul>
+<dialog class="respage" id="resdlg" aria-labelledby="restitle">
+  <div class="rp-head"><div class="rp-in">
+    <button type="button" class="rp-back" id="resclose">‹ Terug</button>
+    <h2 id="restitle">Uitslagen</h2>
+    <p class="rp-sub" id="ressub"></p>
+    <div class="rp-tabs"><button type="button" data-act="res-tab" data-tab="opp" aria-pressed="true">Per tegenstander</button><button type="button" data-act="res-tab" data-tab="date" aria-pressed="false">Op datum</button></div>
+  </div></div>
+  <div class="rp-body"><div class="rp-in">
+    <div class="ressum" id="ressum"></div>
+    <div id="reslist"></div>
+  </div></div>
 </dialog>
 
 <div class="viewbar" id="viewbar" hidden><span>Je bekijkt <b id="viewname"></b> (alleen kijken)</span><span class="vb"><button type="button" class="linkbtn" id="vbreq" data-act="req-open" data-tid="" hidden>Stuur de captain een bericht</button><button type="button" class="linkbtn" data-act="t-back">Terug naar mijn team</button></span></div>
@@ -410,8 +453,6 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
   <div id="who"></div>
   <div id="summary"></div>
   <div id="list" class="group"></div>
-
-  <button type="button" class="panel resopen" id="resbtn" data-act="res-open" hidden><span>Uitslagen</span><span class="rcount" id="rescount"></span></button>
 
   <details class="panel" id="pastbox" hidden>
     <summary id="pastsum">Gespeeld</summary>
@@ -873,6 +914,7 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     h += wl.length ? '<p class="where"><span class="wlab">Locatie:</span><span>' + esc(wl.length > 1 ? wl[0] + ' · ' + wl[wl.length - 1] : wl[0]) + '</span></p>'
       : '<p class="where"><span class="wnone">' + esc(whereLine(m)) + '</span></p>';
     if (hasResult(m) || (canResult() && begun(m))) h += '<div class="resbox">' + resultBlock(m, 'c') + '</div>';
+    else if (!begun(m)) h += prevHtml(m);
     h += '<div class="bar" style="grid-template-columns:repeat(' + Math.max(PLAYERS.length, 1) + ',1fr)" aria-hidden="true">' + cells.join('') + '</div>';
     if (low) {
       h += '<p class="lowmsg"><strong>' + (pres === 0 ? 'Niemand aanwezig.' : 'Nog maar ' + pres + ' aanwezig.') + '</strong> Je hebt er minimaal ' + MIN +
@@ -1119,55 +1161,118 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     }).catch(function () { toast('Antwoord versturen is niet gelukt.'); }).then(function () { $('repsend').disabled = false; });
   });
 
+
   /* ---------- uitslagen ---------- */
   var RESLAB = { win: 'Gewonnen', loss: 'Verloren', draw: 'Gelijk' };
+  var RESLET = { win: 'W', loss: 'V', draw: 'G' };
+  var fResDate = new Intl.DateTimeFormat('nl-NL', { weekday: 'short', day: 'numeric', month: 'short', timeZone: (typeof TZ !== 'undefined' ? TZ : 'Europe/Amsterdam') });
+  function resDate(s) { return fResDate.format(new Date(s)); }
   function canResult() { return !!state.uid && state.dbState === 'ok' && amCaptainish(); }
   function hasResult(m) { return m.us !== null && m.us !== undefined && m.them !== null && m.them !== undefined; }
   function resultKind(m) { return m.us > m.them ? 'win' : m.us < m.them ? 'loss' : 'draw'; }
   function begun(m) { return Date.parse(m.start) <= Date.now(); }
-  /* de thuisploeg staat altijd links */
+  function oppKey(o) { return String(o || '').trim().toLowerCase().replace(/\s+/g, ' '); }
+  /* score met de thuisploeg eerst, zoals op het wedstrijdformulier */
+  function scoreTxt(m) { return m.home === false ? m.them + ' – ' + m.us : m.us + ' – ' + m.them; }
   function scoreLine(m) {
     var us = esc(TEAM || 'Wij'), them = esc(m.opp || 'Tegenstander');
-    var a = m.home === false ? [them, m.them, us, m.us] : [us, m.us, them, m.them];
-    return '<span class="rs-t">' + a[0] + '</span><b class="rs-n">' + a[1] + ' – ' + a[3] + '</b><span class="rs-t">' + a[2] + '</span>';
+    var a = m.home === false ? [them, us] : [us, them];
+    return '<span class="rs-t">' + a[0] + '</span><b class="rs-n">' + scoreTxt(m) + '</b><span class="rs-t">' + a[1] + '</span>';
   }
-  function resultBlock(m, ctx) {
-    var key = ctx + ':' + m.id, mid = esc(m.id), h = '';
-    if (state.resEdit === key) {
-      var v = state.resVal[m.id] || {};
-      function inp(side, label) {
-        return '<label><span>' + esc(label) + '</span><input type="number" inputmode="numeric" min="0" max="99" data-res="' + side + '" data-mid="' + mid +
-          '" data-fk="r' + side + ':' + esc(key) + '" value="' + esc(v[side]) + '" aria-label="Score ' + esc(label) + '"></label>';
-      }
-      var us = inp('us', TEAM || 'Wij'), them = inp('them', m.opp || 'Tegenstander');
-      return '<div class="resform"><div class="resin">' + (m.home === false ? them + '<b>–</b>' + us : us + '<b>–</b>' + them) + '</div>' +
-        '<div class="acts"><button type="button" class="btn small" data-act="res-save" data-mid="' + mid + '" data-fk="rs:' + esc(key) + '">Uitslag opslaan</button>' +
-        (hasResult(m) ? '<button type="button" class="linkbtn danger" data-act="res-clear" data-mid="' + mid + '">Wissen</button>' : '') +
-        '<button type="button" class="linkbtn" data-act="res-cancel">Annuleer</button></div></div>';
+  /* de vorige wedstrijd tegen dezelfde tegenstander, met uitslag */
+  function prevResult(m) {
+    var k = oppKey(m.opp), t = Date.parse(m.start), best = null;
+    state.matches.forEach(function (o) {
+      if (o === m || oppKey(o.opp) !== k || !hasResult(o) || Date.parse(o.start) >= t) return;
+      if (!best || Date.parse(o.start) > Date.parse(best.start)) best = o;
+    });
+    return best;
+  }
+  function prevHtml(m) {
+    var o = prevResult(m);
+    if (!o) return '';
+    var k = resultKind(o);
+    return '<p class="prevres"><span class="pr-l">Vorige keer ' + (o.home === false ? 'uit' : 'thuis') + ' · ' + esc(resDate(o.start)) + '</span>' +
+      '<span class="pr-r"><b class="rbadge ' + k + '">' + RESLET[k] + '</b><b class="pr-n">' + scoreTxt(o) + '</b></span></p>';
+  }
+  function resForm(m, ctx) {
+    var key = ctx + ':' + m.id, mid = esc(m.id), v = state.resVal[m.id] || {};
+    function inp(side, label) {
+      return '<label><span>' + esc(label) + '</span><input type="number" inputmode="numeric" min="0" max="99" data-res="' + side + '" data-mid="' + mid +
+        '" data-fk="r' + side + ':' + esc(key) + '" value="' + esc(v[side]) + '" aria-label="Score ' + esc(label) + '"></label>';
     }
+    var us = inp('us', TEAM || 'Wij'), them = inp('them', m.opp || 'Tegenstander');
+    return '<div class="resform"><div class="resin">' + (m.home === false ? them + '<b>–</b>' + us : us + '<b>–</b>' + them) + '</div>' +
+      '<div class="acts"><button type="button" class="btn small" data-act="res-save" data-mid="' + mid + '" data-fk="rs:' + esc(key) + '">Uitslag opslaan</button>' +
+      (hasResult(m) ? '<button type="button" class="linkbtn danger" data-act="res-clear" data-mid="' + mid + '">Wissen</button>' : '') +
+      '<button type="button" class="linkbtn" data-act="res-cancel">Annuleer</button></div></div>';
+  }
+  function editBtn(m, ctx, label) {
+    var key = ctx + ':' + m.id;
+    return '<button type="button" class="linkbtn" data-act="res-edit" data-key="' + esc(key) + '" data-mid="' + esc(m.id) + '" data-fk="re:' + esc(key) + '">' + label + '</button>';
+  }
+  /* uitslag op de wedstrijdkaart */
+  function resultBlock(m, ctx) {
+    if (state.resEdit === ctx + ':' + m.id) return resForm(m, ctx);
+    var h = '';
     if (hasResult(m)) h += '<div class="result ' + resultKind(m) + '"><span class="rs-lab">' + RESLAB[resultKind(m)] + '</span><span class="rs-score">' + scoreLine(m) + '</span></div>';
-    if (canResult() && begun(m)) h += '<button type="button" class="linkbtn" data-act="res-edit" data-key="' + esc(key) + '" data-mid="' + mid + '" data-fk="re:' + esc(key) + '">' +
-      (hasResult(m) ? 'Uitslag wijzigen' : 'Uitslag invullen') + '</button>';
+    if (canResult() && begun(m)) h += editBtn(m, ctx, hasResult(m) ? 'Uitslag wijzigen' : 'Uitslag invullen');
     return h;
   }
-  function playedMatches() {
-    return state.matches.filter(function (m) { return oppKnown(m.opp) && begun(m); }).sort(byStart).reverse();
+  /* één regel in de uitslagenpagina */
+  function resRow(m, withOpp) {
+    var tag = m.home === false ? '<span class="rr-tag">Uit</span>' : '<span class="rr-tag home">Thuis</span>';
+    var right;
+    if (hasResult(m)) right = '<span class="rr-res"><b class="rr-n">' + scoreTxt(m) + '</b><b class="rbadge ' + resultKind(m) + '" title="' + RESLAB[resultKind(m)] + '">' + RESLET[resultKind(m)] + '</b></span>';
+    else if (!begun(m)) right = '<span class="rr-open">Nog te spelen</span>';
+    else right = '<span class="rr-open">Geen uitslag</span>';
+    var h = '<div class="rrow' + (hasResult(m) ? ' ' + resultKind(m) : '') + '">' + tag +
+      '<div class="rr-mid">' + (withOpp ? '<strong>' + esc(m.opp) + '</strong>' : '') + '<span>' + esc(resDate(m.start)) + '</span></div>' + right;
+    if (state.resEdit === 'd:' + m.id) h += '<div class="rr-edit">' + resForm(m, 'd') + '</div>';
+    else if (canResult() && begun(m)) h += '<div class="rr-edit">' + editBtn(m, 'd', hasResult(m) ? 'Wijzigen' : 'Uitslag invullen') + '</div>';
+    return h + '</div>';
   }
   function renderResults() {
-    var btn = $('resbtn'), list = playedMatches();
-    var on = !!state.uid && state.dbState === 'ok' && list.length > 0;
-    btn.hidden = !on;
-    var done = list.filter(hasResult), w = 0, d = 0, l = 0, f = 0, a = 0;
-    done.forEach(function (m) { var k = resultKind(m); if (k === 'win') w++; else if (k === 'loss') l++; else d++; f += m.us; a += m.them; });
-    $('rescount').textContent = done.length ? w + 'W · ' + d + 'G · ' + l + 'V' : '';
-    if (!$('resdlg').open) return;
-    $('ressum').innerHTML = done.length ? '<span><b>' + done.length + '</b> gespeeld</span><span class="rw"><b>' + w + '</b> gewonnen</span><span><b>' + d +
+    var all = state.matches.filter(function (m) { return oppKnown(m.opp); }).sort(byStart);
+    var on = !!state.uid && state.dbState === 'ok' && all.length > 0;
+    $('resbtn').hidden = !on;
+    var d = $('resdlg');
+    if (!d.open) return;
+    var done = all.filter(hasResult), w = 0, g = 0, l = 0, f = 0, a = 0;
+    done.forEach(function (m) { var k = resultKind(m); if (k === 'win') w++; else if (k === 'loss') l++; else g++; f += m.us; a += m.them; });
+    $('ressub').textContent = (TEAM || '') + ' · seizoen ' + (typeof seasonLabel === 'function' ? seasonLabel() : '');
+    $('ressum').innerHTML = done.length ? '<span><b>' + done.length + '</b> gespeeld</span><span class="rw"><b>' + w + '</b> gewonnen</span><span><b>' + g +
       '</b> gelijk</span><span class="rl"><b>' + l + '</b> verloren</span><span>Voor – tegen <b>' + f + ' – ' + a + '</b></span>' : '';
-    $('reslist').innerHTML = list.length ? list.map(function (m) {
-      var tag = m.home === true ? '<span class="rr-tag home">Thuis</span>' : m.home === false ? '<span class="rr-tag">Uit</span>' : '';
-      return '<li class="resrow"><div class="rr-top">' + tag + '<span>' + esc(matchWhen(m.start)) + '</span></div><div class="rr-opp">' + esc(m.opp) + '</div>' +
-        (hasResult(m) ? '' : '<p class="rr-none">Nog geen uitslag</p>') + resultBlock(m, 'd') + '</li>';
-    }).join('') : '<li class="resrow"><p class="rr-none">Er zijn nog geen gespeelde wedstrijden.</p></li>';
+    var tab = state.resTab || 'opp';
+    [].forEach.call(document.querySelectorAll('[data-act="res-tab"]'), function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-tab') === tab ? 'true' : 'false'); });
+    var h = '';
+    if (!all.length) h = '<p class="rr-none">Er zijn nog geen wedstrijden.</p>';
+    else if (tab === 'date') {
+      var played = all.filter(begun).reverse(), coming = all.filter(function (m) { return !begun(m); });
+      h = (played.length ? '<section class="oppcard"><h3>Gespeeld</h3>' + played.map(function (m) { return resRow(m, true); }).join('') + '</section>' : '') +
+        (coming.length ? '<section class="oppcard"><h3>Nog te spelen</h3>' + coming.map(function (m) { return resRow(m, true); }).join('') + '</section>' : '');
+    } else {
+      var groups = {}, order = [];
+      all.forEach(function (m) { var k = oppKey(m.opp); if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(m); });
+      var now = Date.now();
+      function nextOf(k) { var n = groups[k].filter(function (m) { return !begun(m); })[0]; return n ? Date.parse(n.start) : null; }
+      function lastOf(k) { var g2 = groups[k]; return Date.parse(g2[g2.length - 1].start); }
+      order.sort(function (x, y) {
+        var nx = nextOf(x), ny = nextOf(y);
+        if (nx !== null && ny !== null) return nx - ny;
+        if (nx !== null) return -1;
+        if (ny !== null) return 1;
+        return lastOf(y) - lastOf(x);
+      });
+      var firstNext = order.length && nextOf(order[0]) !== null ? order[0] : null;
+      h = order.map(function (k) {
+        var g3 = groups[k], res = g3.filter(hasResult), tw = 0, tl = 0;
+        res.forEach(function (m) { if (resultKind(m) === 'win') tw++; else if (resultKind(m) === 'loss') tl++; });
+        var label = k === firstNext ? '<span class="rr-next">Eerstvolgende</span>' : '';
+        return '<section class="oppcard">' + label + '<h3>' + esc(g3[0].opp) + '</h3>' + g3.map(function (m) { return resRow(m, false); }).join('') + '</section>';
+      }).join('');
+    }
+    $('reslist').innerHTML = h;
   }
   function saveResult(mid, clear) {
     var m = state.matches.filter(function (x) { return String(x.id) === String(mid); })[0];
@@ -1181,6 +1286,14 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
       render();
     }).catch(function (e) { toast(e && e.message ? e.message : 'Opslaan is niet gelukt.'); });
   }
+  function openResults() {
+    var d = $('resdlg');
+    if (d.open) return;
+    if (d.showModal) d.showModal(); else d.setAttribute('open', '');
+    try { history.pushState({ uitslagen: 1 }, ''); } catch (e) {}
+    renderResults();
+    $('reslist').parentNode.scrollTop = 0;
+  }
   document.addEventListener('input', function (ev) {
     var t = ev.target;
     if (!t || !t.dataset || !t.dataset.res) return;
@@ -1192,11 +1305,9 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     if (!t) return;
     var act = t.getAttribute('data-act'), mid = t.getAttribute('data-mid');
     if (act === 'rep-open') openReply(mid, t.getAttribute('data-to'), t.getAttribute('data-name'));
-    else if (act === 'res-open') {
-      var d = $('resdlg');
-      if (!d.open) { if (d.showModal) d.showModal(); else d.setAttribute('open', ''); }
-      renderResults();
-    } else if (act === 'res-edit') {
+    else if (act === 'res-open') openResults();
+    else if (act === 'res-tab') { state.resTab = t.getAttribute('data-tab'); state.resEdit = null; renderResults(); }
+    else if (act === 'res-edit') {
       var m = state.matches.filter(function (x) { return String(x.id) === String(mid); })[0];
       state.resEdit = t.getAttribute('data-key');
       state.resVal[mid] = { us: m && hasResult(m) ? m.us : '', them: m && hasResult(m) ? m.them : '' };
@@ -1208,8 +1319,12 @@ dialog.inbox::backdrop { background: rgba(0,0,0,.55); }
     else if (act === 'res-clear') saveResult(mid, true);
   });
   $('resclose').addEventListener('click', function () { $('resdlg').close(); });
-  $('resdlg').addEventListener('click', function (ev) { if (ev.target === $('resdlg')) $('resdlg').close(); });
-  $('resdlg').addEventListener('close', function () { if (state.resEdit && state.resEdit.indexOf('d:') === 0) { state.resEdit = null; render(); } });
+  $('resdlg').addEventListener('close', function () {
+    if (state.resEdit && state.resEdit.indexOf('d:') === 0) { state.resEdit = null; render(); }
+    if (history.state && history.state.uitslagen) { try { history.back(); } catch (e) {} }
+  });
+  /* terugknop van de telefoon sluit de uitslagenpagina */
+  window.addEventListener('popstate', function () { if ($('resdlg').open) $('resdlg').close(); });
   function renderBell() {
     var on = !!state.uid && state.dbState === 'ok';
     var n = on ? unreadCount() : 0;
