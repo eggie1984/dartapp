@@ -1,4 +1,4 @@
 {
-  "versie": "1.9.3",
-  "nieuw": "Gespeelde wedstrijden blijven nu staan, zodat de captain er de uitslag bij kan invullen. Wordt een wedstrijd naar een andere dag verzet, dan staat iedereen weer op Kan."
+  "versie": "1.9.4",
+  "nieuw": "Herstel: berichten versturen vanuit Thuiswedstrijden lukt weer, ook als de pagina lang open heeft gestaan."
 }
